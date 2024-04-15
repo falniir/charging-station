@@ -1,9 +1,16 @@
-import Image from "next/image";
+import Link from "next/link";
 import { AvailableList } from "@/components/AvailableList";
-export default function Home() {
+import Admin from "@/pages/admin";
+
+export default function Page() {
   return (
-    <main className="flex min-h-screen flex-col items-center justify-between p-24">
+    <div className="container mx-auto">
+      <div className="flex justify-center mt-6">
+        <Link href="/admin">
+          <div className="btn btn-primary">Admin</div>
+        </Link>
+      </div>
       <AvailableList />
-    </main>
+    </div>
   );
 }
