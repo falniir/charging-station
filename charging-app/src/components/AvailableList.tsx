@@ -12,19 +12,9 @@ import {
   getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table"
-import { ArrowUpDown, ChevronDown, MoreHorizontal } from "lucide-react"
+import { ArrowUpDown } from "lucide-react"
  
 import { Button } from "@/components/ui/button"
-import { Checkbox } from "@/components/ui/checkbox"
-import {
-  DropdownMenu,
-  DropdownMenuCheckboxItem,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuLabel,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
 import { Input } from "@/components/ui/input"
 import {
   Table,
@@ -34,43 +24,20 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { StationLocationDTO } from "@/app/dto" 
+import { StationDTO, StationLocationDTO } from "@/app/dto" 
+ 
+type AvailableListProps = {
+  data: StationLocationDTO[],
+  bookFunction: (station: StationLocationDTO) => void;
+  bookedStation: StationLocationDTO;
+}
+export function AvailableList({data, bookFunction, bookedStation}: AvailableListProps) {
+  const [sorting, setSorting] = React.useState<SortingState>([])
+  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
+    []
+  )
 
-const data: StationLocationDTO[] = [
-  {
-    id: 0,
-    name: 'Shell Klæbu',
-    available_stations: 3,
-    total_stations: 4,
-  },
-  {
-    id: 1,
-    name: 'Shell Midtbyen',
-    available_stations: 0,
-    total_stations: 4,
-  },
-  {
-    id: 2,
-    name: 'Exxon Nidarosdomen',
-    available_stations: 3,
-    total_stations: 10,
-  },
-  {
-    id: 3,
-    name: 'Statoil',
-    available_stations: 10,
-    total_stations: 10,
-  },
-  {
-    id: 4,
-    name: 'YX Kjøpmannsgata',
-    available_stations: 0,
-    total_stations: 2,
-  },
-]
- 
- 
-export const columns: ColumnDef<StationLocationDTO>[] = [
+  const columns: ColumnDef<StationLocationDTO>[] = [
     {
         accessorKey: "available_stations",
         accessorFn: row => `${row.available_stations} / ${row.total_stations}`,
@@ -93,6 +60,30 @@ export const columns: ColumnDef<StationLocationDTO>[] = [
         )
       },
     },
+
+    {
+      accessorKey: "queue_count",
+      header: ({ column }) => {
+        return (
+          <Button
+            variant="ghost"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          >
+            Queue count
+            <ArrowUpDown className="ml-2 h-4 w-4" />
+          </Button>
+        )
+      },
+      cell: ({ row }) => {
+          if(row.getValue("queue_count") as number > 0) {
+            return (
+            <div className="lowercase">
+                {row.getValue("queue_count") as string}
+            </div>
+            )
+          }
+    },
+  },
   {
     accessorKey: "name",
     header: ({ column }) => {
@@ -111,23 +102,17 @@ export const columns: ColumnDef<StationLocationDTO>[] = [
   {
     id: "actions",
     cell: ({ row }) => {
-      return (
-        
-        <Button>Book now</Button>
+      return(
+        <Button onClick={() => bookFunction(row.original)}>Book now</Button>
       )
-    },
+    }
   },
 ]
- 
-export function AvailableList() {
-  const [sorting, setSorting] = React.useState<SortingState>([])
-  const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
-    []
-  )
+
   const [columnVisibility, setColumnVisibility] =
     React.useState<VisibilityState>({})
   const [rowSelection, setRowSelection] = React.useState({})
- 
+
   const table = useReactTable({
     data,
     columns,
@@ -146,7 +131,7 @@ export function AvailableList() {
       rowSelection,
     },
   })
- 
+
   return (
     <div className="w-full">
       <div className="flex items-center py-4">
@@ -184,7 +169,7 @@ export function AvailableList() {
               table.getRowModel().rows.map((row) => (
                 <TableRow
                   key={row.id}
-                  data-state={row.getIsSelected() && "selected"}
+                  data-state={(row.id as unknown as number == bookedStation.id) && "selected"}
                 >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>
