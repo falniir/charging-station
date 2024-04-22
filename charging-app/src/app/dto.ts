@@ -7,6 +7,7 @@ export type StationLocationDTO = {
     name: string;
     available_stations: number;
     total_stations: number;
+    queue_count: number;
 };
   
 
