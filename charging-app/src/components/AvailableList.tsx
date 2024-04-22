@@ -24,7 +24,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import { StationDTO, StationLocationDTO } from "@/app/dto" 
+import { StationLocationDTO } from "@/app/dto" 
  
 type AvailableListProps = {
   data: StationLocationDTO[],

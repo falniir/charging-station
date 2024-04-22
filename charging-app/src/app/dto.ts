@@ -10,7 +10,9 @@ export type StationLocationDTO = {
     queue_count: number;
 };
   
-
 export type ChargingStatusDTO = {
-    charging_percent: number;
-};
+    station: StationLocationDTO;
+    charging_status: number;
+    started_datetime: Date;
+    current_price: number;
+}
