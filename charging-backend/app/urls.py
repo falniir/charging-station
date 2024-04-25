@@ -21,9 +21,9 @@ from rest_framework import routers
 
 router = routers.DefaultRouter()
 router.register('stations', ChargingViews.StationsView)
-
 urlpatterns = [
     path('', include(router.urls)),
+    path('stations/book/<int:id>/', ChargingViews.StationBookView.as_view()),
     path("admin/", admin.site.urls),
     path('api-auth/', include('rest_framework.urls',
                               namespace='rest_framework'))
