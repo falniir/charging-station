@@ -8,5 +8,7 @@ to init do
 in charging-backend
 Then do
 ```pipenv run python manage.py migrate``
+then to fill database with stock data, do: 
+```pipenv run python manage.py fill``
 then 
 ```pipenv run python manage.py runserver``

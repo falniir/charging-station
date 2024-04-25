@@ -20,7 +20,7 @@ from app.charging import views as ChargingViews
 from rest_framework import routers
 
 router = routers.DefaultRouter()
-router.register(r'users', ChargingViews.UserViewSet)
+router.register('stations', ChargingViews.StationsView)
 
 urlpatterns = [
     path('', include(router.urls)),
