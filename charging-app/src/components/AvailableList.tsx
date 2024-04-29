@@ -26,6 +26,7 @@ import {
   TableRow,
 } from "@/components/ui/table";
 import { StationLocationDTO } from "@/app/dto";
+import Loading from "./ui/loading";
 
 type AvailableListProps = {
   data: StationLocationDTO[];
@@ -204,7 +205,7 @@ export function AvailableList({
                   colSpan={columns.length}
                   className="h-24 text-center"
                 >
-                  No results.
+                  <Loading />
                 </TableCell>
               </TableRow>
             )}
