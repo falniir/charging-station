@@ -440,6 +440,10 @@ node_modules
 
 *.sublime*
 
+# ignore idea and venv in git
+.app-backend/venv
+.app-backend/.idea
+
 psd
 thumb
 sketch
