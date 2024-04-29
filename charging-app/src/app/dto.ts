@@ -5,8 +5,8 @@ export type StationDTO = {
 export type StationLocationDTO = {
     id: number;
     name: string;
-    available_stations: number;
-    total_stations: number;
+    available_chargers: number;
+    total_chargers: number;
     queue_count: number;
 };
   
@@ -15,4 +15,9 @@ export type ChargingStatusDTO = {
     charging_status: number;
     started_datetime: Date;
     current_price: number;
+}
+
+export type BookingDTO = {
+    booked_station: StationLocationDTO;
+    stations: StationLocationDTO[];
 }
