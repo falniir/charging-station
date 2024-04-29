@@ -6,6 +6,7 @@ name = "pypi"
 [packages]
 django = "*"
 djangorestframework = "*"
+paho-mqtt = "==1.6.1"
 
 [dev-packages]
 
