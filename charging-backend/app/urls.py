@@ -18,6 +18,7 @@ from django.contrib import admin
 from django.urls import path, include
 from app.charging import views as ChargingViews
 from rest_framework import routers
+from app import views
 
 router = routers.DefaultRouter()
 router.register('stations', ChargingViews.StationsView)
@@ -26,5 +27,6 @@ urlpatterns = [
     path('stations/book/<int:id>/', ChargingViews.StationBookView.as_view()),
     path("admin/", admin.site.urls),
     path('api-auth/', include('rest_framework.urls',
-                              namespace='rest_framework'))
+                              namespace='rest_framework')),
+    path('publish', views.publish_message, name='publish'),
 ]
