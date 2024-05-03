@@ -39,8 +39,8 @@ export function AvailableList({data, bookFunction, bookedStation}: AvailableList
 
   const columns: ColumnDef<StationLocationDTO>[] = [
     {
-        accessorKey: "available_stations",
-        accessorFn: row => `${row.available_stations} / ${row.total_stations}`,
+        accessorKey: "available_chargers",
+        accessorFn: row => `${row.available_chargers} / ${row.total_chargers}`,
         header: ({ column }) => {
           return (
             <Button
@@ -55,7 +55,7 @@ export function AvailableList({data, bookFunction, bookedStation}: AvailableList
         cell: ({ row }) => {
             return (
             <div className="lowercase">
-                {row.getValue("available_stations") as string}
+                {row.getValue("available_chargers") as string}
             </div>
         )
       },
@@ -169,7 +169,7 @@ export function AvailableList({data, bookFunction, bookedStation}: AvailableList
               table.getRowModel().rows.map((row) => (
                 <TableRow
                   key={row.id}
-                  data-state={(row.id as unknown as number == bookedStation.id) && "selected"}
+                  data-state={(row.original.id as unknown as number == bookedStation.id) && "selected"}
                 >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>

@@ -23,6 +23,14 @@ class StationsView(viewsets.ModelViewSet):
     permission_classes = [permissions.AllowAny]
     http_method_names = ['get']
 
+class StationUserView(APIView):
+    def get(self, request, *args, **kwargs):
+        user = User.objects.first()
+        booked_station = StationSerializer( user.profile.booked_station).data
+        return Response(data={
+            'booked_station':booked_station,
+            'stations':StationSerializer(Station.objects.all(), many=True).data
+            })
 
 class StationBookView(APIView):
 
@@ -31,5 +39,12 @@ class StationBookView(APIView):
         user = User.objects.first()
         station = get_object_or_404(Station, id=id)
         station.book(user)
-        Station.objects.all()
-        return Response(data=StationSerializer(Station.objects.all(), many=True).data)
+        booked_station = StationSerializer( user.profile.booked_station).data
+        
+        return Response(data={
+            'booked_station':booked_station,
+            'stations':StationSerializer(Station.objects.all(), many=True).data
+            })
+    
+
+

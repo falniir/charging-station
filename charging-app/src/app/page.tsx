@@ -5,44 +5,7 @@ import Admin from "@/pages/admin";
 import { useEffect, useState } from "react";
 import { StationLocationDTO } from "./dto";
 import { ChargingStatus } from "@/components/ChargingStatus";
-
-const data: StationLocationDTO[] = [
-  {
-    id: 0,
-    name: 'Shell Klæbu',
-    available_stations: 3,
-    total_stations: 4,
-    queue_count:0,
-  },
-  {
-    id: 1,
-    name: 'Shell Midtbyen',
-    available_stations: 0,
-    total_stations: 4,
-    queue_count:2,
-  },
-  {
-    id: 2,
-    name: 'Exxon Nidarosdomen',
-    available_stations: 3,
-    total_stations: 10,
-    queue_count:2,
-  },
-  {
-    id: 3,
-    name: 'Statoil',
-    available_stations: 10,
-    total_stations: 10,
-    queue_count:2,
-  },
-  {
-    id: 4,
-    name: 'YX Kjøpmannsgata',
-    available_stations: 0,
-    total_stations: 2,
-    queue_count:10,
-  },
-]
+import { getChargingStations, getUserChargingStations, postBookChargingStation } from "./api";
 
 export default function Page() {
   const [stations, setStations] = useState<StationLocationDTO[]>([]);
@@ -50,23 +13,27 @@ export default function Page() {
 
   useEffect(() => {
     // Make into request
-    setStations(data);
+    getUserChargingStations().
+      then((data) => {
+        setStations(data.stations);
+        setBookedStation(data.booked_station);
+      })
+    .catch((error) => {
+      console.error(error);
+    });
+
   }, []);
 
   function book(station: StationLocationDTO) {
     //TODO add to backend
-
-    if (bookedStation != station) {
-      setStations(stations.map((s , i) => {
-        if (s.id == station.id) {
-          s.queue_count += 1;
-        } else if(s.id == bookedStation.id) {
-          s.queue_count -= 1;
-        }
-        return s;
-      }));
-      setBookedStation(station);
-    }
+    postBookChargingStation(station.id)     
+    .then((data) => {
+      setStations(data.stations);
+      setBookedStation(data.booked_station);
+      })
+    .catch((error) => {
+      console.error(error);
+    });
   }
   return (
     <div className="container mx-auto">

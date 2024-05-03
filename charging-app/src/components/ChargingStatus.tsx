@@ -18,8 +18,8 @@ const charging_status = {
   station: {
     id: 4,
     name: 'YX Kjøpmannsgata',
-    available_stations: 0,
-    total_stations: 2,
+    available_chargers: 0,
+    total_chargers: 2,
     queue_count:10,
   },
   started_datetime: new Date(),

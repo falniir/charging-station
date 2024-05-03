@@ -19,7 +19,7 @@ class StationSerializer(serializers.ModelSerializer):
     class Meta:
         model = Station
         fields = [
-            'name', 'queue_count', 'total_chargers', 'available_chargers'
+            'id', 'name', 'queue_count', 'total_chargers', 'available_chargers'
         ]
 
     def get_total_chargers(self, station):
