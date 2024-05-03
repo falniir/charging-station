@@ -30,3 +30,17 @@ export async function postLeavebooking():  Promise<StationLocationDTO[]> {
   
     return response.data;
 }
+
+export async function postStartCharging():  Promise<DashboardDTO> {
+    const url = BACKEND_DOMAIN + 'booking/start_charging/';
+    const response = await axios.post<DashboardDTO>(url);
+  
+    return response.data;
+}
+
+export async function postStopCharging():  Promise<DashboardDTO> {
+    const url = BACKEND_DOMAIN + 'booking/stop_charging/';
+    const response = await axios.post<DashboardDTO>(url);
+  
+    return response.data;
+}

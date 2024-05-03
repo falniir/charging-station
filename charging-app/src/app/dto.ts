@@ -11,10 +11,9 @@ export type StationLocationDTO = {
 };
   
 export type ChargingStatusDTO = {
-    station: StationLocationDTO;
-    charging_status: number;
-    started_datetime: Date;
-    current_price: number;
+    charger: string;
+    price: number;
+    start_time: Date;
 }
 
 export type BookingDTO = {
@@ -25,5 +24,6 @@ export type BookingDTO = {
 
 export type DashboardDTO = {
     booking: BookingDTO;
+    charging_status:ChargingStatusDTO;
     stations: StationLocationDTO[];
 }

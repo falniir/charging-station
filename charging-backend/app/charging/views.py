@@ -3,10 +3,11 @@ from rest_framework import permissions, viewsets, status
 from rest_framework.views import APIView
 from rest_framework.response import Response
 from .serializers import UserSerializer
+from django.utils import timezone
 from django.shortcuts import get_object_or_404
 
 from app.charging.models import Station, Booking
-from app.charging.serializers import StationSerializer, BookingSerializer
+from app.charging.serializers import StationSerializer, BookingSerializer, ChargingSessionSerializer
 
 class UserViewSet(viewsets.ModelViewSet):
     """
@@ -27,8 +28,10 @@ class StationUserView(APIView):
     def get(self, request, *args, **kwargs):
         user = User.objects.first()
         booking = BookingSerializer(user.booking).data if hasattr(user, 'booking') else None
+        charging_status = user.charging_sessions.filter(end_time=None).first()
         return Response(data={
             'booking': booking,
+            'charging_status': ChargingSessionSerializer(charging_status).data,
             'stations':StationSerializer(Station.objects.all(), many=True).data
             })
 
@@ -56,4 +59,31 @@ class StationLeaveBookingView(APIView):
             StationSerializer(Station.objects.all(), many=True).data
         )  
 
+class StartChargingView(APIView):
 
+    def post(self, request, *args, **kwargs):
+        user = User.objects.first()
+        # Check if user has booking
+        booking = Booking.objects.filter(user=user).first()
+        if not booking:
+            return Response('You need to book before charging', status=status.HTTP_400_BAD_REQUEST)
+        session = booking.start_charging()
+        if isinstance(session, str):
+            return Response(session, status=status.HTTP_400_BAD_REQUEST)
+        
+        return Response(data={
+            'charging_status':ChargingSessionSerializer(session).data,
+            'stations':StationSerializer(Station.objects.all(), many=True).data
+        })
+
+class StopChargingView(APIView):
+
+    def post(self, request, *args, **kwargs):
+        user = User.objects.first()
+        charging = user.charging_sessions.filter(end_time=None).first()
+        if charging:
+            charging.end_time = timezone.now()
+            charging.save()
+        return Response(
+            StationSerializer(Station.objects.all(), many=True).data
+        )  

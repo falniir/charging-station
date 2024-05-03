@@ -25,6 +25,8 @@ urlpatterns = [
     path('', include(router.urls)),
     path('dashboard/user/', ChargingViews.StationUserView.as_view()),
     path('booking/book/<int:id>/', ChargingViews.StationBookView.as_view()),
+    path('booking/start_charging/', ChargingViews.StartChargingView.as_view()),
+    path('booking/stop_charging/', ChargingViews.StopChargingView.as_view()),
     path('booking/leave_booking/', ChargingViews.StationLeaveBookingView.as_view()),
     path("admin/", admin.site.urls),
     path('api-auth/', include('rest_framework.urls',

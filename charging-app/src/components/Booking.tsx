@@ -6,9 +6,10 @@ import { Button } from "./ui/button";
 type BookingProps = {
   booking: BookingDTO | undefined;
   leaveBookingFunction: () => void;
+  startChargingFunction: () => void;
 }
 
-export function Booking({booking, leaveBookingFunction}: BookingProps) {
+export function Booking({booking, leaveBookingFunction, startChargingFunction}: BookingProps) {
     if(booking == null) return;
     return (
     <div className="border p-2 bg-muted">
@@ -20,7 +21,13 @@ export function Booking({booking, leaveBookingFunction}: BookingProps) {
             onClick={() => leaveBookingFunction()}
           >
             Forlat booking
-          </Button>
+      </Button>
+
+      <Button
+          onClick={() => startChargingFunction()}
+        >
+          Start lading
+        </Button>
     </div>
   )
 }
