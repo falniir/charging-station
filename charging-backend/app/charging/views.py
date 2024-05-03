@@ -6,7 +6,7 @@ from .serializers import UserSerializer
 from django.shortcuts import get_object_or_404
 
 from app.charging.models import Station
-from app.charging.serializers import StationSerializer
+from app.charging.serializers import StationSerializer, BookingSerializer
 
 class UserViewSet(viewsets.ModelViewSet):
     """
@@ -26,9 +26,9 @@ class StationsView(viewsets.ModelViewSet):
 class StationUserView(APIView):
     def get(self, request, *args, **kwargs):
         user = User.objects.first()
-        booked_station = user.booking.station if user.booking else None
+        booking = BookingSerializer(user.booking).data
         return Response(data={
-            'booked_station':StationSerializer(booked_station).data,
+            'booking': booking,
             'stations':StationSerializer(Station.objects.all(), many=True).data
             })
 
@@ -39,10 +39,10 @@ class StationBookView(APIView):
         user = User.objects.first()
         station = get_object_or_404(Station, id=id)
         station.book(user)
-        booked_station = StationSerializer(user.booking.station).data
+        booking = BookingSerializer(user.booking).data
         
         return Response(data={
-            'booked_station':booked_station,
+            'booking':booking,
             'stations':StationSerializer(Station.objects.all(), many=True).data
             })
     

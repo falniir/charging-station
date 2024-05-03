@@ -1,12 +1,13 @@
 from django.contrib.auth.models import User
 from rest_framework import serializers
-from app.charging.models import Station
+from app.charging.models import Station, Booking
 
 class UserSerializer(serializers.HyperlinkedModelSerializer):
 
     class Meta:
         model = User
         fields = ['url', 'username', 'email', 'groups']
+
 
 
 class StationSerializer(serializers.ModelSerializer):
@@ -30,3 +31,9 @@ class StationSerializer(serializers.ModelSerializer):
 
     def get_available_chargers(self, station):
         return station.available_chargers()
+    
+class BookingSerializer(serializers.ModelSerializer):
+    station = StationSerializer(read_only=True)
+    class Meta:
+        model = Booking
+        fields = ['position', 'station', 'register_time']

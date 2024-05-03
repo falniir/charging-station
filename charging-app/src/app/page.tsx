@@ -3,12 +3,14 @@ import Link from "next/link";
 import { AvailableList } from "@/components/AvailableList";
 import Admin from "@/pages/admin";
 import { useEffect, useState } from "react";
-import { StationLocationDTO } from "./dto";
+import { StationLocationDTO, BookingDTO } from "./dto";
 import { ChargingStatus } from "@/components/ChargingStatus";
 import { getChargingStations, getUserChargingStations, postBookChargingStation } from "./api";
+import { Booking } from "@/components/Booking";
 
 export default function Page() {
   const [stations, setStations] = useState<StationLocationDTO[]>([]);
+  const [booking, setBooking] = useState<BookingDTO>();
   const [bookedStation, setBookedStation] = useState<StationLocationDTO>({} as StationLocationDTO);
 
   useEffect(() => {
@@ -16,7 +18,11 @@ export default function Page() {
     getUserChargingStations().
       then((data) => {
         setStations(data.stations);
-        setBookedStation(data.booked_station);
+        setBooking(data.booking);
+        if (data.booking) {
+
+          setBookedStation(data.booking.station);
+        }
       })
     .catch((error) => {
       console.error(error);
@@ -29,7 +35,10 @@ export default function Page() {
     postBookChargingStation(station.id)     
     .then((data) => {
       setStations(data.stations);
-      setBookedStation(data.booked_station);
+      setBooking(data.booking);
+      if (data.booking) {
+        setBookedStation(data.booking.station);
+      }
       })
     .catch((error) => {
       console.error(error);
@@ -42,7 +51,7 @@ export default function Page() {
           <div className="btn btn-primary">Admin</div>
         </Link>
       </div>
-      <ChargingStatus />
+      <Booking booking={booking}/>
       <AvailableList data={stations} bookFunction={book} bookedStation={bookedStation}/>
     </div>
   );
