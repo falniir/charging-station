@@ -1,12 +1,14 @@
 "use client"
 import * as React from "react"
 import { BookingDTO } from "@/app/dto" 
+import { Button } from "./ui/button";
  
 type BookingProps = {
-  booking: BookingDTO;
+  booking: BookingDTO | undefined;
+  leaveBookingFunction: () => void;
 }
 
-export function Booking({booking}: BookingProps) {
+export function Booking({booking, leaveBookingFunction}: BookingProps) {
     if(booking == null) return;
     return (
     <div className="border p-2 bg-muted">
@@ -14,6 +16,11 @@ export function Booking({booking}: BookingProps) {
       <p className="text-l">
         <b>{booking.station.name}</b> Posisisjon i kø {booking.position}
       </p>
+      <Button
+            onClick={() => leaveBookingFunction()}
+          >
+            Forlat booking
+          </Button>
     </div>
   )
 }

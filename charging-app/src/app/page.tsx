@@ -3,15 +3,15 @@ import Link from "next/link";
 import { AvailableList } from "@/components/AvailableList";
 import Admin from "@/pages/admin";
 import { useEffect, useState } from "react";
-import { StationLocationDTO, BookingDTO } from "./dto";
+import { StationLocationDTO, BookingDTO, StationDTO } from "./dto";
 import { ChargingStatus } from "@/components/ChargingStatus";
-import { getChargingStations, getUserChargingStations, postBookChargingStation } from "./api";
+import { getChargingStations, getUserChargingStations, postBookChargingStation, postLeavebooking } from "./api";
 import { Booking } from "@/components/Booking";
 
 export default function Page() {
   const [stations, setStations] = useState<StationLocationDTO[]>([]);
-  const [booking, setBooking] = useState<BookingDTO>();
-  const [bookedStation, setBookedStation] = useState<StationLocationDTO>({} as StationLocationDTO);
+  const [booking, setBooking] = useState<BookingDTO | undefined>();
+  const [bookedStation, setBookedStation] = useState<StationLocationDTO | undefined>({} as StationLocationDTO);
 
   useEffect(() => {
     // Make into request
@@ -44,6 +44,19 @@ export default function Page() {
       console.error(error);
     });
   }
+
+  function leaveBook() {
+    postLeavebooking()     
+    .then((data) => {
+      setStations(data);
+      setBooking(undefined);
+      setBookedStation({} as StationLocationDTO);
+      })
+    .catch((error) => {
+      console.error(error);
+    });
+  }
+
   return (
     <div className="container mx-auto">
       <div className="flex justify-center mt-6">
@@ -51,7 +64,7 @@ export default function Page() {
           <div className="btn btn-primary">Admin</div>
         </Link>
       </div>
-      <Booking booking={booking}/>
+      <Booking booking={booking} leaveBookingFunction={leaveBook}/>
       <AvailableList data={stations} bookFunction={book} bookedStation={bookedStation}/>
     </div>
   );

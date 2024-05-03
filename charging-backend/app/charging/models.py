@@ -29,7 +29,7 @@ class Station(models.Model):
         queue = Booking.objects.filter(station=self).order_by('position')
         if not booking:
             Booking.objects.create(user=user, station=self, position = len(queue)+1)
-        elif booking != self:
+        elif booking.station != self:
             booking.remove_from_list()
             booking.station = self
             booking.position = len(queue)+1
@@ -62,6 +62,10 @@ class Booking(models.Model):
     def save(self, *args: tuple, **kwargs: dict):
         super().save(*args, **kwargs)
 
+    def delete(self):
+        self.remove_from_list()
+        super(Booking, self).delete()
+        
     def remove_from_list(self):
         bookings = Booking.objects.filter(station=self.station, position__gt=self.position).order_by('position')
         for book in bookings:

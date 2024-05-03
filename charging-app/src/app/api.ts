@@ -18,8 +18,15 @@ export async function getUserChargingStations():  Promise<DashboardDTO> {
 
 
 export async function postBookChargingStation(id: number): Promise<DashboardDTO> {
-    const url = BACKEND_DOMAIN + `stations/book/${id}/`;
+    const url = BACKEND_DOMAIN + `booking/book/${id}/`;
     const response = await axios.post<DashboardDTO>(url);
 
+    return response.data;
+}
+
+export async function postLeavebooking():  Promise<StationLocationDTO[]> {
+    const url = BACKEND_DOMAIN + 'booking/leave_booking/';
+    const response = await axios.post<StationLocationDTO[]>(url);
+  
     return response.data;
 }
