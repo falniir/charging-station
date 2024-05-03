@@ -1,7 +1,7 @@
 from django.db import models
 from django.utils.translation import gettext as _
 from django.contrib.auth.models import User
-
+from django.utils import timezone
 
 class ChargerStatus(models.IntegerChoices):
     AVAILABLE = 0, _('Available')
@@ -19,15 +19,23 @@ class Station(models.Model):
         return self.chargers.exclude(status=ChargerStatus.BROKEN).count()
 
     def queue_count(self):
-        return self.booked_by.count()
+        return self.booking_set.count()
 
     def __str__(self):
         return self.name
 
     def book(self, user):
-        profile = Profile.objects.get_or_create(user=user)[0]
-        profile.booked_station = self
-        profile.save()
+        booking = Booking.objects.filter(user=user).first()
+        queue = Booking.objects.filter(station=self).order_by('position')
+        if not booking:
+            Booking.objects.create(user=user, station=self, position = len(queue)+1)
+        elif booking != self:
+            booking.remove_from_list()
+            booking.station = self
+            booking.position = len(queue)+1
+            booking.save()
+
+
 
 
 
@@ -44,8 +52,18 @@ class Charger(models.Model):
     def __str__(self):
         return f'{self.station.name} {self.id}'
 
-class Profile(models.Model):
-    # Dont create a new model to extend user to, instead add a profile
-    # Simplifies the process
-    user = models.OneToOneField(User, on_delete=models.CASCADE, null=False)
-    booked_station = models.ForeignKey(Station, null=True, on_delete=models.SET_NULL, related_name="booked_by")
+class Booking(models.Model):
+    user = models.OneToOneField(User, null=False, on_delete=models.CASCADE)
+    station = models.ForeignKey(Station, null=False, on_delete=models.CASCADE)
+    
+    position = models.PositiveIntegerField(null=True, blank=True)
+    register_time = models.DateTimeField(null=False, blank=False, default=timezone.now)
+
+    def save(self, *args: tuple, **kwargs: dict):
+        super().save(*args, **kwargs)
+
+    def remove_from_list(self):
+        bookings = Booking.objects.filter(station=self.station, position__gt=self.position).order_by('position')
+        for book in bookings:
+            book.position-=1
+            book.save()
