@@ -29,7 +29,7 @@ import { StationLocationDTO } from "@/app/dto"
 type AvailableListProps = {
   data: StationLocationDTO[],
   bookFunction: (station: StationLocationDTO) => void;
-  bookedStation: StationLocationDTO;
+  bookedStation: StationLocationDTO |undefined;
 }
 export function AvailableList({data, bookFunction, bookedStation}: AvailableListProps) {
   const [sorting, setSorting] = React.useState<SortingState>([])
