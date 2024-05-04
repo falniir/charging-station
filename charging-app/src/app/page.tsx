@@ -2,74 +2,87 @@
 import dynamic from "next/dynamic";
 import Link from "next/link";
 import { useEffect, useState } from "react";
-import { StationLocationDTO } from "./dto";
+import { StationLocationDTO, BookingDTO, StationDTO, ChargingStatusDTO } from "./dto";
 import { ChargingStatus } from "@/components/ChargingStatus";
-import { AvailableList } from "@/components/AvailableList";
-
-const data: StationLocationDTO[] = [
-  {
-    id: 0,
-    name: "Shell Klæbu",
-    available_stations: 3,
-    total_stations: 4,
-    queue_count: 0,
-  },
-  {
-    id: 1,
-    name: "Shell Midtbyen",
-    available_stations: 0,
-    total_stations: 4,
-    queue_count: 2,
-  },
-  {
-    id: 2,
-    name: "Exxon Nidarosdomen",
-    available_stations: 3,
-    total_stations: 10,
-    queue_count: 2,
-  },
-  {
-    id: 3,
-    name: "Statoil",
-    available_stations: 10,
-    total_stations: 10,
-    queue_count: 2,
-  },
-  {
-    id: 4,
-    name: "YX Kjøpmannsgata",
-    available_stations: 0,
-    total_stations: 2,
-    queue_count: 10,
-  },
-];
+import { getChargingStations, getUserChargingStations, postBookChargingStation, postLeavebooking, postStartCharging, postStopCharging } from "./api";
+import { Booking } from "@/components/Booking";
 
 export default function Page() {
   const [stations, setStations] = useState<StationLocationDTO[]>([]);
-  const [bookedStation, setBookedStation] = useState<StationLocationDTO>(
-    {} as StationLocationDTO
-  );
+  const [booking, setBooking] = useState<BookingDTO | undefined>();
+  const [chargingStatus, setChargingStatus] = useState<ChargingStatusDTO | undefined>();
+  const [bookedStation, setBookedStation] = useState<StationLocationDTO | undefined>({} as StationLocationDTO);
 
   useEffect(() => {
-    setStations(data);
+    // Make into request
+    getUserChargingStations().
+      then((data) => {
+        setStations(data.stations);
+        setBooking(data.booking);
+        setChargingStatus(data.charging_status);
+        if (data.booking) {
+
+          setBookedStation(data.booking.station);
+        }
+      })
+    .catch((error) => {
+      console.error(error);
+    });
+
   }, []);
 
   function book(station: StationLocationDTO) {
-    if (bookedStation != station) {
-      setStations(
-        stations.map((s) => {
-          if (s.id === station.id) {
-            s.queue_count += 1;
-          } else if (s.id === bookedStation.id) {
-            s.queue_count -= 1;
-          }
-          return s;
-        })
-      );
-      setBookedStation(station);
-    }
+    //TODO add to backend
+    postBookChargingStation(station.id)     
+    .then((data) => {
+      setStations(data.stations);
+      setBooking(data.booking);
+      if (data.booking) {
+        setBookedStation(data.booking.station);
+      }
+      })
+    .catch((error) => {
+      console.error(error);
+    });
   }
 
+  function leaveBook() {
+    postLeavebooking()     
+    .then((data) => {
+      setStations(data);
+      setBooking(undefined);
+      setBookedStation({} as StationLocationDTO);
+      })
+    .catch((error) => {
+      console.error(error);
+    });
+  }
+
+  function startCharging() {
+    postStartCharging()     
+    .then((data) => {
+      setChargingStatus(data.charging_status);
+      setBooking(undefined);
+      setBookedStation({} as StationLocationDTO);
+      setStations(data.stations);
+      })
+    .catch((error) => {
+      console.error(error);
+    });
+  }
+
+  function stopCharging() {
+    postStopCharging()     
+    .then((data) => {
+      setChargingStatus(undefined);
+      setBooking(undefined);
+      setBookedStation({} as StationLocationDTO);
+      setStations(data.stations);
+      })
+    .catch((error) => {
+      console.error(error);
+    });
+  }
   return (
     <div className="container mx-auto">
       <div className="flex justify-center mt-6">
@@ -77,12 +90,10 @@ export default function Page() {
           <a className="btn btn-primary">Admin</a>
         </Link>
       </div>
-      <ChargingStatus />
-      <AvailableList
-        data={stations}
-        bookFunction={book}
-        bookedStation={bookedStation}
-      />
+
+      <ChargingStatus status={chargingStatus} stopChargingFunction={stopCharging} />
+      <Booking booking={booking} leaveBookingFunction={leaveBook} startChargingFunction={startCharging}/>
+      <AvailableList data={stations} bookFunction={book} bookedStation={bookedStation}/>
     </div>
   );
 }

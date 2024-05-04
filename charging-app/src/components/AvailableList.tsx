@@ -31,14 +31,10 @@ import Loading from "./ui/loading";
 type AvailableListProps = {
   data: StationLocationDTO[];
   bookFunction: (station: StationLocationDTO) => void;
-  bookedStation: StationLocationDTO;
-};
-export function AvailableList({
-  data,
-  bookFunction,
-  bookedStation,
-}: AvailableListProps) {
-  const [sorting, setSorting] = React.useState<SortingState>([]);
+  bookedStation: StationLocationDTO |undefined;
+}
+export function AvailableList({data, bookFunction, bookedStation}: AvailableListProps) {
+  const [sorting, setSorting] = React.useState<SortingState>([])
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
     []
   );
@@ -52,25 +48,25 @@ export function AvailableList({
 
   const columns: ColumnDef<StationLocationDTO>[] = [
     {
-      accessorKey: "available_stations",
-      accessorFn: (row) => `${row.available_stations} / ${row.total_stations}`,
-      header: ({ column }) => {
-        return (
-          <Button
-            variant="ghost"
-            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-          >
-            Available Stations
-            <ArrowUpDown className="ml-2 h-4 w-4" />
-          </Button>
-        );
-      },
-      cell: ({ row }) => {
-        return (
-          <div className="lowercase">
-            {row.getValue("available_stations") as string}
-          </div>
-        );
+        accessorKey: "available_chargers",
+        accessorFn: row => `${row.available_chargers} / ${row.total_chargers}`,
+        header: ({ column }) => {
+          return (
+            <Button
+              variant="ghost"
+              onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+            >
+              Available Stations
+              <ArrowUpDown className="ml-2 h-4 w-4" />
+            </Button>
+          )
+        },
+        cell: ({ row }) => {
+            return (
+            <div className="lowercase">
+                {row.getValue("available_chargers") as string}
+            </div>
+        )
       },
     },
 
@@ -184,10 +180,7 @@ export function AvailableList({
               table.getRowModel().rows.map((row) => (
                 <TableRow
                   key={row.id}
-                  data-state={
-                    (row.id as unknown as number) == bookedStation.id &&
-                    "selected"
-                  }
+                  data-state={(row.original.id as unknown as number == bookedStation.id) && "selected"}
                 >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>

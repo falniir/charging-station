@@ -23,7 +23,11 @@ router = routers.DefaultRouter()
 router.register('stations', ChargingViews.StationsView)
 urlpatterns = [
     path('', include(router.urls)),
-    path('stations/book/<int:id>/', ChargingViews.StationBookView.as_view()),
+    path('dashboard/user/', ChargingViews.StationUserView.as_view()),
+    path('booking/book/<int:id>/', ChargingViews.StationBookView.as_view()),
+    path('booking/start_charging/', ChargingViews.StartChargingView.as_view()),
+    path('booking/stop_charging/', ChargingViews.StopChargingView.as_view()),
+    path('booking/leave_booking/', ChargingViews.StationLeaveBookingView.as_view()),
     path("admin/", admin.site.urls),
     path('api-auth/', include('rest_framework.urls',
                               namespace='rest_framework'))
