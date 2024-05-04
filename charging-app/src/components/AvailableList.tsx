@@ -43,7 +43,6 @@ export function AvailableList({data, bookFunction, bookedStation}: AvailableList
 
   const handleBooking = (station: StationLocationDTO) => {
     bookFunction(station!); // This is your existing booking function
-    router.push(`/charging-station?id=${station.id}`); // Navigate to ChargingStation
   };
 
   const columns: ColumnDef<StationLocationDTO>[] = [
@@ -180,7 +179,7 @@ export function AvailableList({data, bookFunction, bookedStation}: AvailableList
               table.getRowModel().rows.map((row) => (
                 <TableRow
                   key={row.id}
-                  data-state={(row.original.id as unknown as number == bookedStation.id) && "selected"}
+                  data-state={(row.original.id === bookedStation?.id) && "selected"}
                 >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>
