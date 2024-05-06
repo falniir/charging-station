@@ -42,9 +42,10 @@ class StationBookView(APIView):
         id = kwargs["id"]
         user = User.objects.first()
         station = get_object_or_404(Station, id=id)
-        station.book(user)
-        booking = BookingSerializer(user.booking).data if hasattr(
-            user, 'booking') else None
+        booking = station.book(user)
+        if isinstance(booking, str):
+            return Response(booking, status=status.HTTP_400_BAD_REQUEST)
+        booking = BookingSerializer(user.booking).data
         return Response(
             data={
                 'booking':
@@ -72,9 +73,6 @@ class StartChargingView(APIView):
         booking = Booking.objects.filter(user=user).first()
         if not booking:
             return Response('You need to book before charging', status=status.HTTP_400_BAD_REQUEST)
-        if not booking:
-            return Response('You need to book before charging',
-                            status=status.HTTP_400_BAD_REQUEST)
         session = booking.start_charging()
         if isinstance(session, str):
             return Response(session, status=status.HTTP_400_BAD_REQUEST)
