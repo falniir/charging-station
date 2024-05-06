@@ -43,6 +43,7 @@ export function AvailableList({data, bookFunction, bookedStation}: AvailableList
 
   const handleBooking = (station: StationLocationDTO) => {
     bookFunction(station!); // This is your existing booking function
+    router.push(`/charging-station?id=${station.id}`);
   };
 
   const columns: ColumnDef<StationLocationDTO>[] = [

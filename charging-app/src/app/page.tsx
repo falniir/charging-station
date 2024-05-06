@@ -7,7 +7,6 @@ import { ChargingStatus } from "@/components/ChargingStatus";
 import { getChargingStations, getUserChargingStations, postBookChargingStation, postLeavebooking, postStartCharging, postStopCharging } from "./api";
 import { Booking } from "@/components/Booking";
 import { AvailableList } from "@/components/AvailableList";
-import ChargingStation from "@/components/ChargingStation";
 
 export default function Page() {
   const [stations, setStations] = useState<StationLocationDTO[]>([]);
@@ -97,14 +96,6 @@ export default function Page() {
       <ChargingStatus status={chargingStatus} stopChargingFunction={stopCharging} />
       <Booking booking={booking} leaveBookingFunction={leaveBook} startChargingFunction={startCharging}/> */}
       <AvailableList data={stations} bookFunction={book} bookedStation={bookedStation} />
-            <ChargingStation
-        data={stations}
-        booking={booking}
-        chargingStatus={chargingStatus}
-        leaveBook={leaveBook}
-        startCharging={startCharging}
-        stopCharging={stopCharging}
-      />
       
     </div>
   );
