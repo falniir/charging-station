@@ -26,4 +26,4 @@ class ChargingSessionAdmin(admin.ModelAdmin):
 @admin.register(Profile)
 class ProfileAdmin(admin.ModelAdmin):
     sortable_by = ['user','wallet']
-    list_display  = ['user','wallet']
+    list_display = ['user','wallet']
