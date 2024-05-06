@@ -6,13 +6,13 @@ import { StationLocationDTO, BookingDTO, StationDTO, ChargingStatusDTO } from ".
 import { ChargingStatus } from "@/components/ChargingStatus";
 import { getChargingStations, getUserChargingStations, postBookChargingStation, postLeavebooking, postStartCharging, postStopCharging } from "./api";
 import { Booking } from "@/components/Booking";
+import { AvailableList } from "@/components/AvailableList";
 
 export default function Page() {
   const [stations, setStations] = useState<StationLocationDTO[]>([]);
   const [booking, setBooking] = useState<BookingDTO | undefined>();
   const [chargingStatus, setChargingStatus] = useState<ChargingStatusDTO | undefined>();
   const [bookedStation, setBookedStation] = useState<StationLocationDTO | undefined>({} as StationLocationDTO);
-
   useEffect(() => {
     // Make into request
     getUserChargingStations().
@@ -91,9 +91,12 @@ export default function Page() {
         </Link>
       </div>
 
+
+{/* 
       <ChargingStatus status={chargingStatus} stopChargingFunction={stopCharging} />
-      <Booking booking={booking} leaveBookingFunction={leaveBook} startChargingFunction={startCharging}/>
-      <AvailableList data={stations} bookFunction={book} bookedStation={bookedStation}/>
+      <Booking booking={booking} leaveBookingFunction={leaveBook} startChargingFunction={startCharging}/> */}
+      <AvailableList data={stations} bookFunction={book} bookedStation={bookedStation} />
+      
     </div>
   );
 }
