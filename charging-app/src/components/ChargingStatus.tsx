@@ -10,7 +10,6 @@ type ChargingProps = {
 
 export function ChargingStatus({status, stopChargingFunction}: ChargingProps) {
     if(status == null) {
-      console.log("lol");
       return;
     }
     return (

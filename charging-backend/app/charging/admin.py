@@ -8,9 +8,9 @@ class StationAdmin(admin.ModelAdmin):
     search_fields = ['id', 'name', 'total_chargers']
 @admin.register(Charger)
 class ChargerAdmin(admin.ModelAdmin):
-    sortable_by = ['id', 'station', 'status']
-    list_display = ['id', 'station', 'status']
-    search_fields = ['id', 'station','status']
+    sortable_by = ['id', 'station', 'state']
+    list_display = ['id', 'station', 'state']
+    search_fields = ['id', 'station','state']
 
 
 @admin.register(Booking)
