@@ -35,6 +35,7 @@ class StationUserView(APIView):
             'stations':StationSerializer(Station.objects.all(), many=True).data
             })
 
+
 class StationBookView(APIView):
 
     def post(self, request, *args, **kwargs):
@@ -42,11 +43,14 @@ class StationBookView(APIView):
         user = User.objects.first()
         station = get_object_or_404(Station, id=id)
         station.book(user)
-        booking = BookingSerializer(user.booking).data if hasattr(user, 'booking') else None
-       
-        return Response(data={
-            'booking':booking,
-            'stations':StationSerializer(Station.objects.all(), many=True).data
+        booking = BookingSerializer(user.booking).data if hasattr(
+            user, 'booking') else None
+        return Response(
+            data={
+                'booking':
+                booking,
+                'stations':
+                StationSerializer(Station.objects.all(), many=True).data
             })
 
 class StationLeaveBookingView(APIView):
@@ -57,7 +61,8 @@ class StationLeaveBookingView(APIView):
         booking.delete()
         return Response(
             StationSerializer(Station.objects.all(), many=True).data
-        )  
+        )
+
 
 class StartChargingView(APIView):
 
@@ -67,14 +72,21 @@ class StartChargingView(APIView):
         booking = Booking.objects.filter(user=user).first()
         if not booking:
             return Response('You need to book before charging', status=status.HTTP_400_BAD_REQUEST)
+        if not booking:
+            return Response('You need to book before charging',
+                            status=status.HTTP_400_BAD_REQUEST)
         session = booking.start_charging()
         if isinstance(session, str):
             return Response(session, status=status.HTTP_400_BAD_REQUEST)
-        
-        return Response(data={
-            'charging_status':ChargingSessionSerializer(session).data,
-            'stations':StationSerializer(Station.objects.all(), many=True).data
-        })
+
+        return Response(
+            data={
+                'charging_status':
+                ChargingSessionSerializer(session).data,
+                'stations':
+                StationSerializer(Station.objects.all(), many=True).data
+            })
+
 
 class StopChargingView(APIView):
 
@@ -82,8 +94,6 @@ class StopChargingView(APIView):
         user = User.objects.first()
         charging = user.charging_sessions.filter(end_time=None).first()
         if charging:
-            charging.end_time = timezone.now()
-            charging.save()
+            charging.stop_charging()
         return Response(
-            StationSerializer(Station.objects.all(), many=True).data
-        )  
+            StationSerializer(Station.objects.all(), many=True).data)
