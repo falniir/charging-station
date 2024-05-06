@@ -65,7 +65,6 @@ export default function ChargingStation() {
   console.log("bookedStation:", bookedStation);
   console.log("booking:", booking);
   console.log("dashboard:", dashboard);
-
   console.log("chargingStatus:", chargingStatus);
   console.log("bookedStation:", bookedStation);
   console.log("booking:", booking);
@@ -167,7 +166,7 @@ export default function ChargingStation() {
                 <span className="sr-only">Back</span>
               </Button>
               <h1 className="flex-1 shrink-0 whitespace-nowrap text-xl font-semibold tracking-tight sm:grow-0">
-                Charging Station : {booking?.position}
+                Charging Station
               </h1>
               <Badge className="ml-auto sm:ml-0" variant="outline">
                 Available
@@ -210,9 +209,9 @@ export default function ChargingStation() {
 
                         <div className="flex items-center justify-between">
                           <span>Charging Level</span>
-                          <span className="font-semibold">75%</span>
+                          <span className="font-semibold">{dashboard?.charging_status.percentage ?? "Not Charging"}</span>
                         </div>
-                        <Progress value={75} />
+                        <Progress value={dashboard?.charging_status.percentage} />
                       </div>
                       <div className="grid gap-3">
                         <div className="flex items-center justify-between">
@@ -271,11 +270,15 @@ export default function ChargingStation() {
               <div className="grid auto-rows-max items-start gap-4 lg:gap-8">
                 <Card x-chunk="dashboard-07-chunk-3">
                   <CardHeader>
-                    <CardTitle>Charging Station Details</CardTitle>
+                    <CardTitle>Booking Details</CardTitle>
                   </CardHeader>
                   <CardContent>
                     <div className="grid gap-6">
                       <div className="grid gap-3">
+                      <div className="flex items-center justify-between">
+                          <span>Queue Position:</span>
+                          <span className="font-semibold">{booking?.position}</span>
+                        </div>
                         <div className="flex items-center justify-between">
                           <span>Station ID</span>
                           <span className="font-semibold">CS001</span>
@@ -285,7 +288,7 @@ export default function ChargingStation() {
                         <div className="flex items-center justify-between">
                           <span>Location</span>
                           <span className="font-semibold">
-                            123 Main St, Anytown USA
+                            Trondheim
                           </span>
                         </div>
                       </div>
