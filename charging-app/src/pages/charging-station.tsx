@@ -27,11 +27,23 @@ import {
   CardContent,
   Card,
 } from "@/components/ui/card";
+
+import { RocketIcon } from "@radix-ui/react-icons"
+ 
+import {
+  Alert,
+  AlertDescription,
+  AlertTitle,
+} from "@/components/ui/alert"
+
 import { Progress } from "@/components/ui/progress";
 import { JSX, SVGProps, useEffect, useState } from "react";
 import { BookingDTO, ChargingStatusDTO, DashboardDTO, StationDTO, StationLocationDTO } from "@/app/dto";
 import { getUserChargingStations } from "@/app/api";
 import { postStartCharging, postStopCharging, postLeavebooking } from "@/app/api";
+import { routeModule } from "next/dist/build/templates/app-page";
+import router from "next/router";
+import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogOverlay, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 
 
 export default function ChargingStation() {
@@ -61,6 +73,8 @@ export default function ChargingStation() {
     };
   }, []);
 
+
+
   console.log("chargingStatus:", chargingStatus);
   console.log("bookedStation:", bookedStation);
   console.log("booking:", booking);
@@ -69,6 +83,21 @@ export default function ChargingStation() {
   console.log("bookedStation:", bookedStation);
   console.log("booking:", booking);
   console.log("dashboard:", dashboard);
+
+  function postLeaveBookingAndRedirect() {
+    postLeavebooking()
+    router.push("/"); 
+  }
+
+
+  function postStartCharging() {
+    if (funds > 0 && funds > chargingStatus?.price) {
+      postStartCharging();
+    }
+    else {
+      alert("Insufficient Funds");
+    }
+  }
 
   return (
     <div key="1" className="flex min-h-screen w-full flex-col bg-muted/40">
@@ -178,7 +207,7 @@ export default function ChargingStation() {
                 <Button size="sm" variant="outline" onClick={postStopCharging}>
                   Stop Charging
                 </Button>
-                <Button size="sm" onClick={postLeavebooking}>Leave Booking</Button>
+                <Button size="sm" onClick={postLeaveBookingAndRedirect}>Leave Booking</Button>
               </div>
             </div>
             <div className="grid gap-4 md:grid-cols-[1fr_250px] lg:grid-cols-3 lg:gap-8">
@@ -194,6 +223,10 @@ export default function ChargingStation() {
                     <div className="grid gap-6">
                       <div className="grid gap-3">
                       <div className="flex items-center justify-between">
+                          <span>Available Funds</span>
+                          <span className="font-semibold">{1000 + "$"}</span>
+                        </div>
+                      <div className="flex items-center justify-between">
                           <span>Price</span>
                           <span className="font-semibold">{dashboard?.charging_status.price}</span>
                         </div>
@@ -201,12 +234,10 @@ export default function ChargingStation() {
                           <span>Charger</span>
                           <span className="font-semibold">{dashboard?.charging_status.charger}</span>
                         </div>
-
                         <div className="flex items-center justify-between">
                           <span>Start Time</span>
                           <span className="font-semibold">{dashboard?.charging_status.start_time as unknown as String}</span>
                         </div>
-
                         <div className="flex items-center justify-between">
                           <span>Charging Level</span>
                           <span className="font-semibold">{dashboard?.charging_status.percentage ?? "Not Charging"}</span>
@@ -277,7 +308,7 @@ export default function ChargingStation() {
                       <div className="grid gap-3">
                       <div className="flex items-center justify-between">
                           <span>Queue Position:</span>
-                          <span className="font-semibold">{booking?.position}</span>
+                          <span className="font-semibold">{booking?.position ?? 0}</span>
                         </div>
                         <div className="flex items-center justify-between">
                           <span>Station ID</span>
