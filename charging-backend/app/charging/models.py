@@ -6,6 +6,11 @@ from django.utils import timezone
 def get_profile(user: User):
     return Profile.objects.get_or_create(user=user)[0]
 
+def get_mock_user():
+    return User.objects.all().first()
+
+def get_mock_chargingsession():
+    return get_mock_user().charging_sessions.filter(end_time=None).first()
 
 class Station(models.Model):
     name = models.CharField(max_length=100, null=False, blank=True)
@@ -66,6 +71,10 @@ class Charger(models.Model):
 
     def set_broken(self):
         # ref: chargerstate_backend: Transistion AVAILABLE/OCCUPIED to BROKEN
+        running = ChargingSession.objects.filter(end_time=None,
+                                                 charger=self).first()
+        if running:
+            running.stop_charging()
         self.state = ChargerState.BROKEN
         self.save()
 
@@ -116,8 +125,6 @@ class Booking(models.Model):
         charging_session = ChargingSession.objects.create(
             user=self.user, charger=available_charger)
         self.delete()
-        #TODO REMOVE
-        charging_session.set_connected()
         return charging_session
 
 
@@ -146,7 +153,7 @@ class ChargingSession(models.Model):
     end_time = models.DateTimeField(null=True, blank=True)
 
     # Percent and prices
-    price = models.IntegerField(null=True, blank=True)
+    price = models.FloatField(null=True, blank=True)
     percent = models.FloatField(null=True, blank=True)
 
     def current_price(self):
@@ -186,26 +193,19 @@ class ChargingSession(models.Model):
         ]:
             return
         # Update wallet
-        profile = get_profile(self.user)
-        profile.wallet -= price
-        profile.save()
-
-        self.state = ChargingSessionState.COMPLETED if self.state == ChargingSessionState.CHARGING else ChargingSessionState.COMPLETED_OVERCHARGED
-        self.end_time = timezone.now()
-        self.save()
+        self.stop_charging()
 
     def set_connected(self):
         self.start_time = timezone.now()
-        self.percent = 70
-        if self.percent >= 80:
+        self.state = ChargingSessionState.CHARGING
+        self.save()
+
+    def update_percent(self, percent):
+        self.percent = percent
+        if self.percent >= 80 and self.state == ChargingSessionState.CHARGING:
             self.threshold_breached()
         else:
-            self.state = ChargingSessionState.CHARGING
             self.save()
-
-    def update_percent(self):
-        if self.percent >= 80:
-            self.threshold_breached()
 
     def threshold_breached(self):
         self.threshold_breach_time = timezone.now()
