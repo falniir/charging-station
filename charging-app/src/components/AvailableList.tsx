@@ -1,5 +1,6 @@
-"use client"
-import * as React from "react"
+"use client";
+import * as React from "react";
+import { useRouter } from "next/navigation";
 import {
   ColumnDef,
   ColumnFiltersState,
@@ -11,11 +12,11 @@ import {
   getPaginationRowModel,
   getSortedRowModel,
   useReactTable,
-} from "@tanstack/react-table"
-import { ArrowUpDown } from "lucide-react"
- 
-import { Button } from "@/components/ui/button"
-import { Input } from "@/components/ui/input"
+} from "@tanstack/react-table";
+import { ArrowUpDown } from "lucide-react";
+
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import {
   Table,
   TableBody,
@@ -23,24 +24,32 @@ import {
   TableHead,
   TableHeader,
   TableRow,
-} from "@/components/ui/table"
-import { StationLocationDTO } from "@/app/dto" 
- 
+} from "@/components/ui/table";
+import { StationLocationDTO } from "@/app/dto";
+import Loading from "./ui/loading";
+
 type AvailableListProps = {
-  data: StationLocationDTO[],
+  data: StationLocationDTO[];
   bookFunction: (station: StationLocationDTO) => void;
-  bookedStation: StationLocationDTO;
+  bookedStation: StationLocationDTO |undefined;
 }
 export function AvailableList({data, bookFunction, bookedStation}: AvailableListProps) {
   const [sorting, setSorting] = React.useState<SortingState>([])
   const [columnFilters, setColumnFilters] = React.useState<ColumnFiltersState>(
     []
-  )
+  );
+
+  const router = useRouter();
+
+  const handleBooking = (station: StationLocationDTO) => {
+    bookFunction(station!); // This is your existing booking function
+    router.push(`/charging-station?id=${station.id}`);
+  };
 
   const columns: ColumnDef<StationLocationDTO>[] = [
     {
-        accessorKey: "available_stations",
-        accessorFn: row => `${row.available_stations} / ${row.total_stations}`,
+        accessorKey: "available_chargers",
+        accessorFn: row => `${row.available_chargers} / ${row.total_chargers}`,
         header: ({ column }) => {
           return (
             <Button
@@ -55,7 +64,7 @@ export function AvailableList({data, bookFunction, bookedStation}: AvailableList
         cell: ({ row }) => {
             return (
             <div className="lowercase">
-                {row.getValue("available_stations") as string}
+                {row.getValue("available_chargers") as string}
             </div>
         )
       },
@@ -72,46 +81,48 @@ export function AvailableList({data, bookFunction, bookedStation}: AvailableList
             Queue count
             <ArrowUpDown className="ml-2 h-4 w-4" />
           </Button>
-        )
+        );
       },
       cell: ({ row }) => {
-          if(row.getValue("queue_count") as number > 0) {
-            return (
+        if ((row.getValue("queue_count") as number) > 0) {
+          return (
             <div className="lowercase">
-                {row.getValue("queue_count") as string}
+              {row.getValue("queue_count") as string}
             </div>
-            )
-          }
+          );
+        }
+      },
     },
-  },
-  {
-    accessorKey: "name",
-    header: ({ column }) => {
-      return (
-        <Button
-          variant="ghost"
-          onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
-        >
-          Name
-          <ArrowUpDown className="ml-2 h-4 w-4" />
-        </Button>
-      )
+    {
+      accessorKey: "name",
+      header: ({ column }) => {
+        return (
+          <Button
+            variant="ghost"
+            onClick={() => column.toggleSorting(column.getIsSorted() === "asc")}
+          >
+            Name
+            <ArrowUpDown className="ml-2 h-4 w-4" />
+          </Button>
+        );
+      },
+      cell: ({ row }) => (
+        <div className="lowercase">{row.getValue("name")}</div>
+      ),
     },
-    cell: ({ row }) => <div className="lowercase">{row.getValue("name")}</div>,
-  },
-  {
-    id: "actions",
-    cell: ({ row }) => {
-      return(
-        <Button onClick={() => bookFunction(row.original)}>Book now</Button>
-      )
-    }
-  },
-]
+    {
+      id: "actions",
+      cell: ({ row }) => {
+        return (
+          <Button onClick={() => handleBooking(row.original)}>Book now</Button>
+        );
+      },
+    },
+  ];
 
   const [columnVisibility, setColumnVisibility] =
-    React.useState<VisibilityState>({})
-  const [rowSelection, setRowSelection] = React.useState({})
+    React.useState<VisibilityState>({});
+  const [rowSelection, setRowSelection] = React.useState({});
 
   const table = useReactTable({
     data,
@@ -130,7 +141,7 @@ export function AvailableList({data, bookFunction, bookedStation}: AvailableList
       columnVisibility,
       rowSelection,
     },
-  })
+  });
 
   return (
     <div className="w-full">
@@ -159,7 +170,7 @@ export function AvailableList({data, bookFunction, bookedStation}: AvailableList
                             header.getContext()
                           )}
                     </TableHead>
-                  )
+                  );
                 })}
               </TableRow>
             ))}
@@ -169,7 +180,7 @@ export function AvailableList({data, bookFunction, bookedStation}: AvailableList
               table.getRowModel().rows.map((row) => (
                 <TableRow
                   key={row.id}
-                  data-state={(row.id as unknown as number == bookedStation.id) && "selected"}
+                  data-state={(row.original.id === bookedStation?.id) && "selected"}
                 >
                   {row.getVisibleCells().map((cell) => (
                     <TableCell key={cell.id}>
@@ -187,7 +198,7 @@ export function AvailableList({data, bookFunction, bookedStation}: AvailableList
                   colSpan={columns.length}
                   className="h-24 text-center"
                 >
-                  No results.
+                  <Loading />
                 </TableCell>
               </TableRow>
             )}
@@ -215,5 +226,5 @@ export function AvailableList({data, bookFunction, bookedStation}: AvailableList
         </div>
       </div>
     </div>
-  )
+  );
 }

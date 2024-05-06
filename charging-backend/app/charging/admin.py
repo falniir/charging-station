@@ -1,5 +1,5 @@
 from django.contrib import admin
-from app.charging.models import Station, Charger
+from app.charging.models import Station, Booking, Charger, ChargingSession
 # Register your models here.
 @admin.register(Station)
 class StationAdmin(admin.ModelAdmin):
@@ -11,3 +11,15 @@ class ChargerAdmin(admin.ModelAdmin):
     sortable_by = ['id', 'station', 'status']
     list_display = ['id', 'station', 'status']
     search_fields = ['id', 'station','status']
+
+
+@admin.register(Booking)
+class BookingAdmin(admin.ModelAdmin):
+    sortable_by = ['id', 'user','station', 'position']
+    list_display = ['id', 'user','station', 'position']
+    search_fields = ['id', 'user','station', 'position']
+
+@admin.register(ChargingSession)
+class ChargingSessionAdmin(admin.ModelAdmin):
+    sortable_by = ['user','charger', 'start_time', 'price']
+    list_display  = ['user','charger', 'start_time', 'price']

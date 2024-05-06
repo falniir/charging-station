@@ -1,48 +1,32 @@
 "use client"
 import * as React from "react"
-import {
-  Card,
-  CardContent,
-  CardDescription,
-  CardFooter,
-  CardHeader,
-  CardTitle,
-} from "@/components/ui/card"
-import { ChargingStatusDTO, StationLocationDTO } from "@/app/dto" 
+import { BookingDTO, ChargingStatusDTO } from "@/app/dto" 
+import { Button } from "./ui/button";
  
-type ChargingStatusProps = {
+type ChargingProps = {
+  status: ChargingStatusDTO | undefined;
+  stopChargingFunction: () => void;
 }
 
-const charging_status = {
-  charging_status: 0.6,
-  station: {
-    id: 4,
-    name: 'YX Kjøpmannsgata',
-    available_stations: 0,
-    total_stations: 2,
-    queue_count:10,
-  },
-  started_datetime: new Date(),
-  current_price: 20,
-} as ChargingStatusDTO;
-
-export function ChargingStatus({}: ChargingStatusProps) {
+export function ChargingStatus({status, stopChargingFunction}: ChargingProps) {
+    if(status == null) {
+      console.log("lol");
+      return;
+    }
     return (
-    <Card>
-      <CardHeader>
-          <CardTitle>Charging status</CardTitle>
-        </CardHeader>
-        <CardContent>
-            <div className="text-xs text-muted-foreground">
-                    Prosent
-              </div>
-        <div className="text-xs text-muted-foreground">
-                    Pris
-                  </div>
-                  <div className="text-xs text-muted-foreground">
-                   Stasjon
-                  </div>
-        </CardContent>
-    </Card>
+    <div className="border p-3 bg-danger">
+      <h1 className="text-xl">Ladestatus</h1>
+      <p className="text-l">
+        <b>{status.charger}</b>
+      </p>
+      <p className="text-l">
+        pris: {status.price}
+      </p>
+      <Button
+            onClick={() => stopChargingFunction()}
+          >
+            Stop Lading
+      </Button>
+    </div>
   )
 }
