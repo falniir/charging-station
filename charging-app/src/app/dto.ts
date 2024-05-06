@@ -27,4 +27,5 @@ export type DashboardDTO = {
     booking: BookingDTO;
     charging_status:ChargingStatusDTO;
     stations: StationLocationDTO[];
+    funds: number;
 }

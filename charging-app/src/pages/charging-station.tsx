@@ -75,27 +75,41 @@ export default function ChargingStation() {
 
 
 
-  console.log("chargingStatus:", chargingStatus);
-  console.log("bookedStation:", bookedStation);
-  console.log("booking:", booking);
-  console.log("dashboard:", dashboard);
-  console.log("chargingStatus:", chargingStatus);
-  console.log("bookedStation:", bookedStation);
-  console.log("booking:", booking);
-  console.log("dashboard:", dashboard);
+  // console.log("chargingStatus:", chargingStatus);
+  // console.log("bookedStation:", bookedStation);
+  // console.log("booking:", booking);
+  // console.log("dashboard:", dashboard);
+  // console.log("chargingStatus:", chargingStatus);
+  // console.log("bookedStation:", bookedStation);
+  // console.log("booking:", booking);
+  // console.log("dashboard:", dashboard);
 
-  function postLeaveBookingAndRedirect() {
-    postLeavebooking()
-    router.push("/"); 
+  async function postLeaveBookingAndRedirect() {
+    postLeavebooking();
+    router.push("/");
   }
 
+  console.log("dashboard:", dashboard);
+  console.log("Funds", dashboard?.funds);
+  console.log("Price", dashboard?.charging_status.price);
+  console.log("Charging Status", chargingStatus);
 
-  function postStartCharging() {
-    if (funds > 0 && funds > chargingStatus?.price) {
-      postStartCharging();
+  function postStartChargingAndCheckFunds() {
+    
+    if (dashboard?.funds === undefined) {
+      alert("Funds or Price is undefined");
+      return;
     }
-    else {
-      alert("Insufficient Funds");
+    if (dashboard?.funds < 0) {
+      alert("Not enough funds");
+      return;
+    }
+
+    if ((dashboard?.funds ?? 0) >= (chargingStatus?.price ?? 0)) {
+      postStartCharging();
+      console.log("Funds", dashboard?.funds);
+    } else {
+     alert("Not enough funds");
     }
   }
 
@@ -201,7 +215,7 @@ export default function ChargingStation() {
                 Available
               </Badge>
               <div className="hidden items-center gap-2 md:ml-auto md:flex">
-                <Button size="sm" variant="outline" onClick={postStartCharging}>
+                <Button size="sm" variant="outline" onClick={postStartChargingAndCheckFunds}>
                   Start Charging
                 </Button>
                 <Button size="sm" variant="outline" onClick={postStopCharging}>
@@ -224,7 +238,7 @@ export default function ChargingStation() {
                       <div className="grid gap-3">
                       <div className="flex items-center justify-between">
                           <span>Available Funds</span>
-                          <span className="font-semibold">{1000 + "$"}</span>
+                          <span className="font-semibold">{dashboard?.funds + "$"}</span>
                         </div>
                       <div className="flex items-center justify-between">
                           <span>Price</span>
