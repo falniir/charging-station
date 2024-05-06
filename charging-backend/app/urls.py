@@ -18,6 +18,7 @@ from django.contrib import admin
 from django.urls import path, include
 from app.charging import views as ChargingViews
 from rest_framework import routers
+from app import views as MQTTViews
 
 router = routers.DefaultRouter()
 router.register('stations', ChargingViews.StationsView)
@@ -30,5 +31,6 @@ urlpatterns = [
     path('booking/leave_booking/', ChargingViews.StationLeaveBookingView.as_view()),
     path("admin/", admin.site.urls),
     path('api-auth/', include('rest_framework.urls',
-                              namespace='rest_framework'))
+                              namespace='rest_framework')),
+    path('publish', MQTTViews.publish_message, name='publish'),
 ]
