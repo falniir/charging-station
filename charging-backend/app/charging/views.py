@@ -6,7 +6,7 @@ from .serializers import UserSerializer
 from django.utils import timezone
 from django.shortcuts import get_object_or_404
 
-from app.charging.models import Station, Booking
+from app.charging.models import Station, Booking, get_profile
 from app.charging.serializers import StationSerializer, BookingSerializer, ChargingSessionSerializer
 
 class UserViewSet(viewsets.ModelViewSet):
@@ -24,15 +24,23 @@ class StationsView(viewsets.ModelViewSet):
     permission_classes = [permissions.AllowAny]
     http_method_names = ['get']
 
+
 class StationUserView(APIView):
+
     def get(self, request, *args, **kwargs):
         user = User.objects.first()
-        booking = BookingSerializer(user.booking).data if hasattr(user, 'booking') else None
+        booking = BookingSerializer(user.booking).data if hasattr(
+            user, 'booking') else None
         charging_status = user.charging_sessions.filter(end_time=None).first()
-        return Response(data={
-            'booking': booking,
-            'charging_status': ChargingSessionSerializer(charging_status).data,
-            'stations':StationSerializer(Station.objects.all(), many=True).data
+        funds = get_profile(user).wallet
+        return Response(
+            data={'funds': funds,
+                'booking':
+                booking,
+                'charging_status':
+                ChargingSessionSerializer(charging_status).data,
+                'stations':
+                StationSerializer(Station.objects.all(), many=True).data
             })
 
 
@@ -42,9 +50,10 @@ class StationBookView(APIView):
         id = kwargs["id"]
         user = User.objects.first()
         station = get_object_or_404(Station, id=id)
-        station.book(user)
-        booking = BookingSerializer(user.booking).data if hasattr(
-            user, 'booking') else None
+        booking = station.book(user)
+        if isinstance(booking, str):
+            return Response(booking, status=status.HTTP_400_BAD_REQUEST)
+        booking = BookingSerializer(user.booking).data
         return Response(
             data={
                 'booking':
@@ -72,9 +81,6 @@ class StartChargingView(APIView):
         booking = Booking.objects.filter(user=user).first()
         if not booking:
             return Response('You need to book before charging', status=status.HTTP_400_BAD_REQUEST)
-        if not booking:
-            return Response('You need to book before charging',
-                            status=status.HTTP_400_BAD_REQUEST)
         session = booking.start_charging()
         if isinstance(session, str):
             return Response(session, status=status.HTTP_400_BAD_REQUEST)

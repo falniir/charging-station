@@ -3,6 +3,10 @@ from django.utils.translation import gettext as _
 from django.contrib.auth.models import User
 from django.utils import timezone
 
+def get_profile(user: User):
+    return Profile.objects.get_or_create(user=user)[0]
+
+
 class Station(models.Model):
     name = models.CharField(max_length=100, null=False, blank=True)
 
@@ -20,17 +24,22 @@ class Station(models.Model):
 
     def book(self, user):
         # Avoid booking while charging
+        if get_profile(user).wallet <= 0:
+            return 'Insufficent funds'
         if user.charging_sessions.filter(end_time=None).first():
-            return
+            return 'Cant book while charging'
         booking = Booking.objects.filter(user=user).first()
         queue = Booking.objects.filter(station=self).order_by('position')
         if not booking:
-            Booking.objects.create(user=user, station=self, position = len(queue)+1)
+            Booking.objects.create(user=user,
+                                   station=self,
+                                   position=len(queue) + 1)
         elif booking.station != self:
             booking.remove_from_list()
             booking.station = self
-            booking.position = len(queue)+1
+            booking.position = len(queue) + 1
             booking.save()
+        return booking
 
 
 
@@ -107,6 +116,8 @@ class Booking(models.Model):
         charging_session = ChargingSession.objects.create(
             user=self.user, charger=available_charger)
         self.delete()
+        #TODO REMOVE
+        charging_session.set_connected()
         return charging_session
 
 
@@ -161,11 +172,31 @@ class ChargingSession(models.Model):
                 self.state == ChargingSessionState.COMPLETED_OVERCHARGED
             ) else (timezone.now() - self.threshold_breach_time)
             threshold_time = threshold_time.total_seconds() / 60
+        price = 200 * sub_threshold_time + 200 * threshold_time
 
-        return 10 * sub_threshold_time + 20 * threshold_time
+        if get_profile(self.user).wallet <= price:
+            self.cancel_charging(price)
+        return price
+
+    def cancel_charging(self, price):
+        # Only stop charging if charging
+        if self.state not in [
+                ChargingSessionState.OVERCHARGING,
+                ChargingSessionState.CHARGING
+        ]:
+            return
+        # Update wallet
+        profile = get_profile(self.user)
+        profile.wallet -= price
+        profile.save()
+
+        self.state = ChargingSessionState.COMPLETED if self.state == ChargingSessionState.CHARGING else ChargingSessionState.COMPLETED_OVERCHARGED
+        self.end_time = timezone.now()
+        self.save()
 
     def set_connected(self):
         self.start_time = timezone.now()
+        self.percent = 70
         if self.percent >= 80:
             self.threshold_breached()
         else:
@@ -186,6 +217,11 @@ class ChargingSession(models.Model):
         self.charger.state = ChargerState.AVAILABLE
         self.charger.save()
 
+        # Pay
+        profile = get_profile(self.user)
+        profile.wallet -= self.price
+        profile.save()
+
         self.end_time = timezone.now()
         self.save()
 
@@ -205,7 +241,10 @@ class ProfileState(models.IntegerChoices):
 
 
 class Profile(models.Model):
-    user = models.OneToOneField(User, null=False, on_delete=models.CASCADE, related_name="profile")
+    user = models.OneToOneField(User,
+                                null=False,
+                                on_delete=models.CASCADE,
+                                related_name="profile")
     state = models.IntegerField(null=True,
                                 choices=ProfileState.choices,
                                 default=ProfileState.IDLE)
