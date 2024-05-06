@@ -1,6 +1,8 @@
 from django.conf import settings
 import paho.mqtt.client as mqtt
 
+# RESERVE MAINTANENCE START
+
 def on_connect(mqtt_client, userdata, flags, rc):
     if rc == 0:
         print("Connected successfully")
