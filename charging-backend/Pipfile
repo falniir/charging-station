@@ -12,3 +12,4 @@ paho-mqtt = "==1.6.1"
 
 [requires]
 python_version = "3.12"
+
