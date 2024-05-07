@@ -1,3 +1,4 @@
+"use client"
 import "tailwindcss/tailwind.css";
 import "/src/app/globals.css";
 import { Button } from "@/components/ui/button";
@@ -44,6 +45,7 @@ import { postStartCharging, postStopCharging, postLeavebooking } from "@/app/api
 import { routeModule } from "next/dist/build/templates/app-page";
 import router from "next/router";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogOverlay, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { useSearchParams } from 'next/navigation'
 
 
 export default function ChargingStation() {
@@ -63,6 +65,8 @@ export default function ChargingStation() {
         console.error(error);
       }
     };
+    
+
 
     fetchData();
 
@@ -73,6 +77,10 @@ export default function ChargingStation() {
     };
   }, []);
 
+  //Gets query from the URL: /charging-station?id=2 in this case id=2 as a number
+  const searchParams = useSearchParams();
+  const id = searchParams?.get("id");
+
 
 
   // console.log("chargingStatus:", chargingStatus);
@@ -83,6 +91,23 @@ export default function ChargingStation() {
   // console.log("bookedStation:", bookedStation);
   // console.log("booking:", booking);
   // console.log("dashboard:", dashboard);
+// 0 is not charging, 1 is charging, 2 overcharging, 3 completed, 4 completed overcharged
+  function showChargingState() {
+
+    if (dashboard?.charging_status.state === 0) {
+      return "Not Charging";
+    } else if (dashboard?.charging_status.state === 1) {
+      return "Charging";
+    } else if (dashboard?.charging_status.state === 2) {
+      return "Overcharging";
+    } else if (dashboard?.charging_status.state === 3) {
+      return "Completed";
+    } else if (dashboard?.charging_status.state === 4) {
+      return "Completed Overcharged";
+    } else {
+      return "Unknown";
+    }
+  }
 
   async function postLeaveBookingAndRedirect() {
     postLeavebooking();
@@ -253,10 +278,10 @@ export default function ChargingStation() {
                           <span className="font-semibold">{dashboard?.charging_status.start_time as unknown as String}</span>
                         </div>
                         <div className="flex items-center justify-between">
-                          <span>Charging Level</span>
-                          <span className="font-semibold">{dashboard?.charging_status.percentage ?? "Not Charging"}</span>
+                          <span>Charging Status</span>
+                          <span className="font-semibold">{showChargingState()}</span>
                         </div>
-                        <Progress value={dashboard?.charging_status.percentage} />
+                        <Progress value={dashboard?.charging_status?.percent as number} />
                       </div>
                       <div className="grid gap-3">
                         <div className="flex items-center justify-between">
@@ -325,8 +350,8 @@ export default function ChargingStation() {
                           <span className="font-semibold">{booking?.position ?? 0}</span>
                         </div>
                         <div className="flex items-center justify-between">
-                          <span>Station ID</span>
-                          <span className="font-semibold">CS001</span>
+                          <span>Available Stations</span>
+                          <span className="font-semibold">{dashboard?.stations[id]?.available_chargers ?? 0}</span>
                         </div>
                       </div>
                       <div className="grid gap-3">

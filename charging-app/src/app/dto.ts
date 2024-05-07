@@ -14,7 +14,8 @@ export type ChargingStatusDTO = {
     charger: string;
     price: number;
     start_time: Date;
-    percentage: number;
+    percent: number;
+    state: number;
 }
 
 export type BookingDTO = {
