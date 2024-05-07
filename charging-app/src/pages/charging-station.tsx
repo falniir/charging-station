@@ -99,13 +99,14 @@ export default function ChargingStation() {
     } else if (dashboard?.charging_status.state === 1) {
       return "Charging";
     } else if (dashboard?.charging_status.state === 2) {
+      alert("Overcharging");
       return "Overcharging";
     } else if (dashboard?.charging_status.state === 3) {
       return "Completed";
     } else if (dashboard?.charging_status.state === 4) {
       return "Completed Overcharged";
     } else {
-      return "Unknown";
+      return "Not Charging";
     }
   }
 
@@ -280,6 +281,10 @@ export default function ChargingStation() {
                         <div className="flex items-center justify-between">
                           <span>Charging Status</span>
                           <span className="font-semibold">{showChargingState()}</span>
+                        </div>
+                        <div className="flex items-center justify-between">
+                          <span>Charging Percentage</span>
+                          <span className="font-semibold">{dashboard?.charging_status?.percent as number}</span>
                         </div>
                         <Progress value={dashboard?.charging_status?.percent as number} />
                       </div>
