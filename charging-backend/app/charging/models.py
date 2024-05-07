@@ -123,11 +123,13 @@ class Booking(models.Model):
         # ref: profilestate, ENTRY to BOOKING
         booking = Booking.objects.filter(user=user).first()
         queue = Booking.objects.filter(station=station).order_by('position')
+        # Create new booking 
         if not booking:
             booking = Booking.objects.create(user=user,
                                              station=station,
                                              position=len(queue) + 1)
         elif booking.station != station:
+            # If user already has booking but to different station, reassign it and leave its queue
             booking.remove_from_queue()
             booking.station = station
             booking.position = len(queue) + 1
@@ -140,6 +142,7 @@ class Booking(models.Model):
         bookings = Booking.objects.filter(
             station=self.station,
             position__gt=self.position).order_by('position')
+        # subtract all after so they get a new position
         for book in bookings:
             book.position -= 1
             book.save()
@@ -182,6 +185,13 @@ class ChargingSessionState(models.IntegerChoices):
 
 
 class ChargingSession(models.Model):
+    """
+        Database object for chargingsession
+        Provides details for which charger, state of session, and user
+        At same time provides time for started, stopped, and when it went above charging threshold
+
+        Price is calculated out from these times, and with help from percent.
+    """
     # Meta
     state = models.IntegerField(null=True,
                                 choices=ChargingSessionState.choices,
@@ -202,9 +212,13 @@ class ChargingSession(models.Model):
     percent = models.FloatField(null=True, blank=True)
 
     def current_price(self):
+        """
+            Method for calculating time out from times.
+        """
         # No price if not connected yet
         if self.state == ChargingSessionState.NOT_CONNECTED: return 0
 
+        # Calculating minutes before threshold, or just endtime if not reached
         sub_threshold_time = timezone.now() - self.start_time
         if self.state in [
                 ChargingSessionState.OVERCHARGING,
@@ -213,9 +227,11 @@ class ChargingSession(models.Model):
             sub_threshold_time = self.threshold_breach_time - self.start_time
         elif self.state == ChargingSessionState.COMPLETED:
             sub_threshold_time = self.end_time - self.start_time
+        # get minutes
         sub_threshold_time = (sub_threshold_time.total_seconds() / 60)
-        threshold_time = 0
 
+        # Calculating minutes after threshold, or just endtime if not reached
+        threshold_time = 0
         if self.state in [
                 ChargingSessionState.OVERCHARGING,
                 ChargingSessionState.COMPLETED_OVERCHARGED
@@ -224,8 +240,12 @@ class ChargingSession(models.Model):
                 self.state == ChargingSessionState.COMPLETED_OVERCHARGED
             ) else (timezone.now() - self.threshold_breach_time)
             threshold_time = threshold_time.total_seconds() / 60
+
+        # calculating price, sub threshold is lower, while threshold time is much higher
+        # prices could be tied to station at a later time.
         price = 1 * sub_threshold_time + 1000 * threshold_time
 
+        # if price is too much for user, must cancel charging.
         if get_profile(self.user).wallet <= price:
             self.cancel_charging(price)
         return price
@@ -241,12 +261,11 @@ class ChargingSession(models.Model):
     def set_connected(self):
         # ref: profilestate: Transistion from RESERVING to CHARGING
         profile = get_profile(self.user)
-        print(profile.state)
+        # Can only connect if reserving
         if profile.state == ProfileState.RESERVING:
             profile.state = ProfileState.CHARGING
             profile.save()
             # ref: profilestate: ENTRY to CHARGING
-            print("set connected")
             self.start_charging()
 
     def start_charging(self):
@@ -259,6 +278,7 @@ class ChargingSession(models.Model):
     def update_percent(self, percent):
         # ref: profilestate: INTERNAL TRANSISTION CHARGING
         self.percent = percent
+        # Threshold is 80, only set once
         if self.percent >= 80 and self.state == ChargingSessionState.CHARGING:
             self.threshold_breached()
         else:

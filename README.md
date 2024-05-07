@@ -1,6 +1,12 @@
 # charging-station
 TTM4115 Charging Station system for EVs
 
+# frontend
+```
+yarn install
+yarn run dev
+```
+
 
 # backend
 to init do
@@ -13,9 +19,10 @@ in charging-backend
 
 Then do
 ```
+pipenv run python manage.py makemigrations
 pipenv run python manage.py migrate
 ```
-
+may need to delete database
 then to fill database with stock data, do:
 
 ```pipenv run python manage.py fill```
