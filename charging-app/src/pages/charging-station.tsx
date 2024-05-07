@@ -29,22 +29,12 @@ import {
   Card,
 } from "@/components/ui/card";
 
-import { RocketIcon } from "@radix-ui/react-icons"
- 
-import {
-  Alert,
-  AlertDescription,
-  AlertTitle,
-} from "@/components/ui/alert"
-
 import { Progress } from "@/components/ui/progress";
 import { JSX, SVGProps, useEffect, useState } from "react";
 import { BookingDTO, ChargingStatusDTO, DashboardDTO, StationDTO, StationLocationDTO } from "@/app/dto";
 import { getUserChargingStations } from "@/app/api";
 import { postStartCharging, postStopCharging, postLeavebooking } from "@/app/api";
-import { routeModule } from "next/dist/build/templates/app-page";
 import router from "next/router";
-import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogOverlay, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
 import { useSearchParams } from 'next/navigation'
 
 
@@ -66,8 +56,6 @@ export default function ChargingStation() {
       }
     };
     
-
-
     fetchData();
 
     const intervalId = setInterval(fetchData, 5000);
@@ -82,16 +70,6 @@ export default function ChargingStation() {
   const id = searchParams?.get("id");
 
 
-
-  // console.log("chargingStatus:", chargingStatus);
-  // console.log("bookedStation:", bookedStation);
-  // console.log("booking:", booking);
-  // console.log("dashboard:", dashboard);
-  // console.log("chargingStatus:", chargingStatus);
-  // console.log("bookedStation:", bookedStation);
-  // console.log("booking:", booking);
-  // console.log("dashboard:", dashboard);
-// 0 is not charging, 1 is charging, 2 overcharging, 3 completed, 4 completed overcharged
   function showChargingState() {
 
     if (dashboard?.charging_status.state === 0) {
