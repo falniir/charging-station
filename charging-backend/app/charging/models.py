@@ -177,7 +177,7 @@ class Booking(models.Model):
 
 
 class ChargingSessionState(models.IntegerChoices):
-    NOT_CONNECTED = 0, _('Not connected')
+    CONNECTED = 0, _('Connected')
     CHARGING = 1, _('Charging')
     OVERCHARGING = 2, _('Overcharging')
     COMPLETED = 3, _('Completed')
@@ -195,7 +195,7 @@ class ChargingSession(models.Model):
     # Meta
     state = models.IntegerField(null=True,
                                 choices=ChargingSessionState.choices,
-                                default=ChargingSessionState.NOT_CONNECTED)
+                                default=ChargingSessionState.CONNECTED)
     user = models.ForeignKey(User,
                              null=False,
                              on_delete=models.CASCADE,
@@ -216,7 +216,7 @@ class ChargingSession(models.Model):
             Method for calculating time out from times.
         """
         # No price if not connected yet
-        if self.state == ChargingSessionState.NOT_CONNECTED: return 0
+        if self.state == ChargingSessionState.CONNECTED: return 0
 
         # Calculating minutes before threshold, or just endtime if not reached
         sub_threshold_time = timezone.now() - self.start_time
@@ -270,7 +270,7 @@ class ChargingSession(models.Model):
 
     def start_charging(self):
         # ref: profilestate: ENTRY to CHARGING
-        # ref: chargingsessionstate: Transistion from NOT_CONNECTED to CHARGING
+        # ref: chargingsessionstate: Transistion from CONNECTED to CHARGING
         self.set_start_time()
         self.state = ChargingSessionState.CHARGING
         self.save()
@@ -301,6 +301,11 @@ class ChargingSession(models.Model):
         self.save()
 
     def stop_charging(self):
+        if self.state not in [
+                ChargingSessionState.OVERCHARGING,
+                ChargingSessionState.CHARGING
+        ]:
+            return
         # ref: profilestate: Transistion from CHARGING to IDLE
         # ref: profilestate: EXIT CHARGING
         self.charger.free_charger()
@@ -338,7 +343,7 @@ class ChargingSession(models.Model):
     def save(self, *args: tuple, **kwargs: dict):
         # Error correction is state is null
         if (not self.state
-                or self.state == ChargingSessionState.NOT_CONNECTED):
+                or self.state == ChargingSessionState.CONNECTED):
             if (self.end_time):
                 self.state = ChargingSessionState.COMPLETED if not self.threshold_breach_time else ChargingSessionState.COMPLETED_OVERCHARGED
             elif (self.start_time):

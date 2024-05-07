@@ -5,7 +5,7 @@ from app.charging.models import get_mock_chargingsession, Charger, get_mock_user
 def on_connect(mqtt_client, userdata, flags, rc):
     if rc == 0:
         print("Connected successfully")
-        mqtt_client.subscribe(settings.MQTT_TOPIC)
+        mqtt_client.subscribe(settings.MQTT_TOPIC, qos=1)
     else:
         print("Bad connection. Code:", rc)
 
@@ -14,7 +14,6 @@ def on_message(mqtt_client, userdata, msg):
     msg_string = msg.payload.decode("utf-8")
     if (msg_string == 'START'):
         charging_session = get_mock_chargingsession()
-        print(charging_session)
         if charging_session:
             charging_session.set_connected()
     elif (msg.payload.decode("utf-8") == 'MAINTANENCE'):

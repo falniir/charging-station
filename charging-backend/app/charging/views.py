@@ -105,7 +105,7 @@ class StartChargingView(APIView):
         if isinstance(session, str):
             return Response(session, status=status.HTTP_400_BAD_REQUEST)
         # send to charger it is reserved
-        r, c = mqtt_client.publish(settings.MQTT_TOPIC, 'RESERVE')
+        r, c = mqtt_client.publish(settings.MQTT_TOPIC, 'RESERVE',qos=1)
         print(r, c)
 
         return Response(
@@ -127,10 +127,10 @@ class StopChargingView(APIView):
         # if it is charging, stop charging
         if profile.state == ProfileState.CHARGING:
             charging.stop_charging()
-            r, c = mqtt_client.publish(settings.MQTT_TOPIC, 'STOP')
+            r, c = mqtt_client.publish(settings.MQTT_TOPIC, 'STOP', qos=1)
         elif profile.state == ProfileState.RESERVING:
             # if it is only reserved, stop charging
             charging.cancel_reservation()
-            r, c = mqtt_client.publish(settings.MQTT_TOPIC, 'STOP')
+            r, c = mqtt_client.publish(settings.MQTT_TOPIC, 'STOP',qos=1)
         return Response(
             StationSerializer(Station.objects.all(), many=True).data)

@@ -43,8 +43,9 @@ export default function ChargingStation() {
   const [bookedStation, setBookedStation] = useState<StationDTO | undefined>();
   const [booking, setBooking] = useState<BookingDTO | undefined>();
   const [dashboard, setDashboard] = useState<DashboardDTO | undefined>();
-
+  const [alertState, setAlertState] = useState<number>(0);
   useEffect(() => {
+    
     const fetchData = async () => {
       try {
         const data = await getUserChargingStations();
@@ -52,13 +53,13 @@ export default function ChargingStation() {
         setChargingStatus(data.charging_status);
         setDashboard(data);
       } catch (error) {
-        console.error(error);
+        console.error(error.data);
       }
     };
     
     fetchData();
 
-    const intervalId = setInterval(fetchData, 5000);
+    const intervalId = setInterval(fetchData, 600);
 
     return () => {
       clearInterval(intervalId);
@@ -77,7 +78,11 @@ export default function ChargingStation() {
     } else if (dashboard?.charging_status.state === 1) {
       return "Charging";
     } else if (dashboard?.charging_status.state === 2) {
-      alert("Overcharging");
+      if (alertState == 0) {
+        setAlertState(1);
+        alert("Overcharging");
+      }
+
       return "Overcharging";
     } else if (dashboard?.charging_status.state === 3) {
       return "Completed";
@@ -90,6 +95,7 @@ export default function ChargingStation() {
 
   async function postLeaveBookingAndRedirect() {
     postLeavebooking();
+    setAlertState(0);
     router.push("/");
   }
 
@@ -110,7 +116,9 @@ export default function ChargingStation() {
     }
 
     if ((dashboard?.funds ?? 0) >= (chargingStatus?.price ?? 0)) {
-      postStartCharging();
+      postStartCharging().catch((error) => {
+        alert(error.response.data);
+      });
       console.log("Funds", dashboard?.funds);
     } else {
      alert("Not enough funds");
@@ -334,7 +342,7 @@ export default function ChargingStation() {
                         </div>
                         <div className="flex items-center justify-between">
                           <span>Available Stations</span>
-                          <span className="font-semibold">{dashboard?.stations[id]?.available_chargers ?? 0}</span>
+                          <span className="font-semibold">{dashboard?.booking?.station.available_chargers ?? 0}</span>
                         </div>
                       </div>
                       <div className="grid gap-3">

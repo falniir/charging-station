@@ -13,5 +13,5 @@ def publish_message(request):
     msg = request_data['msg']
     rc, mid = -1, -1
     if ((msg == 'RESERVE') or (msg == 'MAINTANENCE') or (msg == 'START') or (msg == 'RESET') or (msg == 'STOP')):
-        rc, mid = mqtt_client.publish(settings.MQTT_TOPIC, request_data['msg']) 
+        rc, mid = mqtt_client.publish(settings.MQTT_TOPIC, request_data['msg'], qos=1) 
     return JsonResponse({'code': rc, 'mid': mid})
