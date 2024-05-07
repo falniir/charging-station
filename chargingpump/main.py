@@ -179,7 +179,7 @@ class ChargerMQTT:
 
 
         self.client.connect(broker, port)
-        self.client.subscribe(mqtt_topic)
+        self.client.subscribe(mqtt_topic, qos=1)
 
         try:
             thread = Thread(target=self.client.loop_forever)
@@ -190,10 +190,15 @@ class ChargerMQTT:
 
 
 
+
+
+
 class Charger:
 
     def __init__(self):
         self.sensehat = SenseHat()
+        self.charge_percentage = 0.0
+        self.incr = 100 / 7
 
     def sensehat_vacant(self):
         self.sensehat.set_pixels(green_checkmark)
@@ -208,44 +213,46 @@ class Charger:
         self.sensehat.set_pixels(yellow_triangle)
         
     def sensehat_charging(self):
-        start_value = random.randint(1, 40)
-        incr = 100 / 7
-        print("start_value = {}".format(start_value))
-        print("incr = {}".format(incr))
-        print("for loop start index = {}".format(int((100 - start_value) // incr)))
-        for i in range(int(start_value // incr), 7):
-            self.sensehat.set_pixels(charge[i])
-            self.mqtt_client.publish(mqtt_topic, "{:.2f}".format(start_value))
-            start_value += incr
-            time.sleep(3)
-        self.sensehat.set_pixels(charge[7])
-        self.mqtt_client.publish(mqtt_topic, "100.00")
+        index = int((self.charge_percentage) // self.incr)
+
+        if self.charge_percentage == 100.0:
+            self.sensehat.set_pixels(charge[7])
+            self.mqtt_client.publish(mqtt_topic, "100.00".format(self.charge_percentage), qos=1)
+            return
+        
+        self.sensehat.set_pixels(charge[index])
+        self.mqtt_client.publish(mqtt_topic, "{:.2f}".format(self.charge_percentage), qos=1)
+        self.charge_percentage += self.incr
+        self.charge_percentage = min(100.0, self.charge_percentage)
+
+
             
 
 
     def mqtt_send_vacant(self):
-        self.mqtt_client.publish(mqtt_topic, "VACANT")
+        self.mqtt_client.publish(mqtt_topic, "VACANT", qos=1)
         self.sensehat_vacant()
 
     def mqtt_send_reserved_ack(self):
-        self.mqtt_client.publish(mqtt_topic, "RESERVED")
+        self.mqtt_client.publish(mqtt_topic, "RESERVED", qos=1)
         self.sensehat_reserved()
 
     def mqtt_send_occupied(self):
-        self.mqtt_client.publish(mqtt_topic, "OCCUPIED")
-        self.sensehat_occupied()
+        self.mqtt_client.publish(mqtt_topic, "OCCUPIED", qos=1)
     
     def mqtt_send_fault(self):
-        self.mqtt_client.publish(mqtt_topic, "FAULT")
+        self.mqtt_client.publish(mqtt_topic, "FAULT", qos=1)
         self.sensehat_fault()
 
 
     def charging_on(self):
-        self.mqtt_client.publish(mqtt_topic, "STARTED")
+        self.mqtt_client.publish(mqtt_topic, "STARTED", qos=1)
+        self.charge_percentage = random.randint(1, 40)
+        self.sensehat.set_pixels(charge[int((self.charge_percentage) // self.incr)])
         self.sensehat_charging()
 
     def charging_off(self):
-        self.mqtt_client.publish(mqtt_topic, "STOPPED")
+        self.mqtt_client.publish(mqtt_topic, "STOPPED", qos=1)
 
 
     
@@ -256,20 +263,75 @@ class Charger:
 
 
 
+transition_initial_to_vacant = {
+                                "source": "initial", 
+                                "target": "state_vacant"
+                                }
+                                
+transition_vacant_to_reserved = {
+                                "trigger": "message_reserve", 
+                                "source": "state_vacant", 
+                                "target": "state_reserved", 
+                                "effect": "start_timer('t1', 15000)"
+                                }
+                                
+transition_vacant_to_fault = {
+                            "trigger": "message_fault", 
+                            "source": "state_vacant", 
+                            "target": "state_fault"
+                            }
 
-transition_initial_to_vacant = {"source": "initial", "target": "state_vacant"}
-transition_vacant_to_reserved = {"trigger": "message_reserve", "source": "state_vacant", "target": "state_reserved", "effect": "start_timer('t', 15000)"}
-transition_vacant_to_fault = {"trigger": "message_fault", "source": "state_vacant", "target": "state_fault"}
+transition_reserved_to_vacant_timeout = {
+                                        "trigger": "t1", 
+                                        "source": "state_reserved", 
+                                        "target": "state_vacant"
+                                        }
+                                        
+transition_reserved_to_vacant_stop = {
+                                    "trigger": "message_car_disconnected", 
+                                    "source": "state_reserved", 
+                                    "target": "state_vacant", 
+                                    "effect": "stop_timer('t1')"
+                                    }
+                                    
+transition_reserved_to_occupied = {
+                                    "trigger": "message_car_connected", 
+                                    "source": "state_reserved", 
+                                    "target": "state_occupied", 
+                                    "effect": "stop_timer('t1'); charging_on;"
+                                    }
+                                    
+transition_reserved_to_fault = {
+                                "trigger": "message_fault", 
+                                "source": "state_reserved", 
+                                "target": "state_fault"
+                                }
 
-transition_reserved_to_vacant_timeout = {"trigger": "t", "source": "state_reserved", "target": "state_vacant"}
-transition_reserved_to_vacant_reset = {"trigger": "message_reset", "source": "state_reserved", "target": "state_vacant", "effect": "stop_timer('t')"}
-transition_reserved_to_occupied = {"trigger": "message_car_connected", "source": "state_reserved", "target": "state_occupied", "effect": "stop_timer('t')"}
-transition_reserved_to_fault = {"trigger": "message_fault", "source": "state_reserved", "target": "state_fault"}
+transition_occupied_to_vacant = {
+                                "trigger": "message_car_disconnected", 
+                                "source": "state_occupied", 
+                                "target": "state_vacant"
+                                }
 
-transition_occupied_to_vacant = {"trigger": "message_car_disconnected", "source": "state_occupied", "target": "state_vacant"}
-transition_occupied_to_fault = {"trigger": "message_fault", "source": "state_occupied", "target": "state_fault"}
+transition_occupied_to_fault = {
+                                "trigger": "message_fault", 
+                                "source": "state_occupied", 
+                                "target": "state_fault"
+                                }
+                                
+transition_occupied_to_occupied = {
+                                "trigger": "t2", 
+                                "source": "state_occupied", 
+                                "target": "state_occupied", 
+                                "effect": "start_timer('t2', 2500); sensehat_charging"
+                                }
 
-transition_fault_to_vacant = {"trigger": "message_reset", "source": "state_fault", "target": "state_vacant"}
+
+transition_fault_to_vacant = {
+                            "trigger": "message_reset", 
+                            "source": "state_fault", 
+                            "target": "state_vacant"
+                            }
 
 
 
@@ -281,10 +343,13 @@ state_reserved = {'name': 'state_reserved',
                 'entry': 'mqtt_send_reserved_ack; sensehat_reserved'
 }
 
+
 state_occupied = {'name': 'state_occupied',
-                'entry': 'mqtt_send_occupied; sensehat_occupied; charging_on',
-                'exit': 'charging_off'
+                'entry': 'mqtt_send_occupied; start_timer("t2", 3000)',
+                'exit': 'stop_timer("t2")'
+                
 }
+
 
 state_fault = {'name': 'state_fault',
                 'entry': 'mqtt_send_fault; sensehat_fault; charging_off'
@@ -304,21 +369,26 @@ def main():
     charger = Charger()
     charger_machine = Machine(name='charger', 
                             transitions=[transition_initial_to_vacant,
+                            
                                         transition_vacant_to_reserved,
                                         transition_vacant_to_fault,
+                                        
                                         transition_reserved_to_vacant_timeout,
-                                        transition_reserved_to_vacant_reset,
+                                        transition_reserved_to_vacant_stop,
                                         transition_reserved_to_occupied,
                                         transition_reserved_to_fault,
+                                        
                                         transition_occupied_to_vacant,
                                         transition_occupied_to_fault,
+                                        transition_occupied_to_occupied,
+                                        
                                         transition_fault_to_vacant], 
                                                             
                                 obj=charger, 
 
                                 states=[state_vacant, 
                                         state_reserved, 
-                                        state_occupied, 
+                                        state_occupied,
                                         state_fault])
 
 
