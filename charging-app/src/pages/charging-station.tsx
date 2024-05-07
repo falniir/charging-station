@@ -1,3 +1,4 @@
+"use client"
 import "tailwindcss/tailwind.css";
 import "/src/app/globals.css";
 import { Button } from "@/components/ui/button";
@@ -44,6 +45,7 @@ import { postStartCharging, postStopCharging, postLeavebooking } from "@/app/api
 import { routeModule } from "next/dist/build/templates/app-page";
 import router from "next/router";
 import { AlertDialog, AlertDialogAction, AlertDialogCancel, AlertDialogContent, AlertDialogDescription, AlertDialogFooter, AlertDialogHeader, AlertDialogOverlay, AlertDialogTitle, AlertDialogTrigger } from "@/components/ui/alert-dialog";
+import { useSearchParams } from 'next/navigation'
 
 
 export default function ChargingStation() {
@@ -72,6 +74,10 @@ export default function ChargingStation() {
       clearInterval(intervalId);
     };
   }, []);
+
+  //Gets query from the URL: /charging-station?id=2 in this case id=2 as a number
+  const searchParams = useSearchParams();
+  const id = searchParams?.get("id");
 
 
 
@@ -254,9 +260,9 @@ export default function ChargingStation() {
                         </div>
                         <div className="flex items-center justify-between">
                           <span>Charging Level</span>
-                          <span className="font-semibold">{dashboard?.charging_status.percentage ?? "Not Charging"}</span>
+                          <span className="font-semibold">{dashboard?.charging_status.state}</span>
                         </div>
-                        <Progress value={dashboard?.charging_status.percentage} />
+                        <Progress value={dashboard?.charging_status?.percent as number} />
                       </div>
                       <div className="grid gap-3">
                         <div className="flex items-center justify-between">
@@ -325,8 +331,8 @@ export default function ChargingStation() {
                           <span className="font-semibold">{booking?.position ?? 0}</span>
                         </div>
                         <div className="flex items-center justify-between">
-                          <span>Station ID</span>
-                          <span className="font-semibold">CS001</span>
+                          <span>Available Stations</span>
+                          <span className="font-semibold">{dashboard?.stations[id]?.available_chargers ?? 0}</span>
                         </div>
                       </div>
                       <div className="grid gap-3">
