@@ -4,9 +4,12 @@ from rest_framework.views import APIView
 from rest_framework.response import Response
 from .serializers import UserSerializer
 from django.utils import timezone
+from django.conf import settings
+from app.charging.mqtt import client as mqtt_client
+
 from django.shortcuts import get_object_or_404
 
-from app.charging.models import Station, Booking, get_profile
+from app.charging.models import Station, Booking, get_profile, get_mock_user, ProfileState
 from app.charging.serializers import StationSerializer, BookingSerializer, ChargingSessionSerializer
 
 class UserViewSet(viewsets.ModelViewSet):
@@ -28,7 +31,7 @@ class StationsView(viewsets.ModelViewSet):
 class StationUserView(APIView):
 
     def get(self, request, *args, **kwargs):
-        user = User.objects.first()
+        user = get_mock_user() if request.user.is_anonymous else request.user
         booking = BookingSerializer(user.booking).data if hasattr(
             user, 'booking') else None
         charging_status = user.charging_sessions.filter(end_time=None).first()
@@ -48,12 +51,13 @@ class StationBookView(APIView):
 
     def post(self, request, *args, **kwargs):
         id = kwargs["id"]
-        user = User.objects.first()
+        user = get_mock_user() if request.user.is_anonymous else request.user
         station = get_object_or_404(Station, id=id)
         booking = station.book(user)
         if isinstance(booking, str):
             return Response(booking, status=status.HTTP_400_BAD_REQUEST)
         booking = BookingSerializer(user.booking).data
+
         return Response(
             data={
                 'booking':
@@ -62,12 +66,12 @@ class StationBookView(APIView):
                 StationSerializer(Station.objects.all(), many=True).data
             })
 
-class StationLeaveBookingView(APIView):
+class StationCancelBookingView(APIView):
 
     def post(self, request, *args, **kwargs):
-        user = User.objects.first()
+        user = get_mock_user() if request.user.is_anonymous else request.user
         booking = get_object_or_404(Booking, user=user)
-        booking.delete()
+        booking.cancel_booking()
         return Response(
             StationSerializer(Station.objects.all(), many=True).data
         )
@@ -76,14 +80,18 @@ class StationLeaveBookingView(APIView):
 class StartChargingView(APIView):
 
     def post(self, request, *args, **kwargs):
-        user = User.objects.first()
+        user = get_mock_user() if request.user.is_anonymous else request.user
         # Check if user has booking
         booking = Booking.objects.filter(user=user).first()
         if not booking:
-            return Response('You need to book before charging', status=status.HTTP_400_BAD_REQUEST)
-        session = booking.start_charging()
+            return Response('You need to book before charging',
+                            status=status.HTTP_400_BAD_REQUEST)
+        session = booking.reserve_charging()
         if isinstance(session, str):
             return Response(session, status=status.HTTP_400_BAD_REQUEST)
+
+        r, c = mqtt_client.publish(settings.MQTT_TOPIC, 'RESERVE')
+        print(r, c)
 
         return Response(
             data={
@@ -97,9 +105,14 @@ class StartChargingView(APIView):
 class StopChargingView(APIView):
 
     def post(self, request, *args, **kwargs):
-        user = User.objects.first()
+        user = get_mock_user() if request.user.is_anonymous else request.user
         charging = user.charging_sessions.filter(end_time=None).first()
-        if charging:
+        profile = get_profile(user)
+        if profile.status == ProfileState.CHARGING:
             charging.stop_charging()
+            r, c = mqtt_client.publish(settings.MQTT_TOPIC, 'STOP')
+        elif profile.status == ProfileState.RESERVING:
+            charging.cancel_reservation()
+            r, c = mqtt_client.publish(settings.MQTT_TOPIC, 'STOP')
         return Response(
             StationSerializer(Station.objects.all(), many=True).data)

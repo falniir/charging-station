@@ -2,7 +2,7 @@ import json
 from django.http import JsonResponse
 from django.views.decorators.csrf import csrf_exempt
 from django.conf import settings
-from app.mqtt import client as mqtt_client
+from app.charging.mqtt import client as mqtt_client
 
 # RESERVE MAINTANENCE START RESET
 # Added csrf exemption since we will only use localy run brokers for the demo
