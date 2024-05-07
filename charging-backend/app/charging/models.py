@@ -33,7 +33,7 @@ class Station(models.Model):
         profile = get_profile(user)
         if profile.wallet <= 0:
             return 'Insufficent funds'
-        if not profile.state not in [ProfileState.IDLE, ProfileState.BOOKING]:
+        if profile.state not in [ProfileState.IDLE, ProfileState.BOOKING]:
             return 'Cant book while charging'
         profile.state = ProfileState.BOOKING
         # ref: profilestate, ENTRY to BOOKING
@@ -44,10 +44,8 @@ class Station(models.Model):
         # ref: profilestate, entry RESERVING
         # ref: chargerstate_backend: Transistion from AVAILABLE to OCCUPIED
         available_charger = Charger.objects.filter(
-            station=self.station, state=ChargerState.AVAILABLE).first()
+            station=self, state=ChargerState.AVAILABLE).first()
         available_charger.set_occupied()
-        available_charger.state = ChargerState.OCCUPIED
-        available_charger.save()
 
         return available_charger
 
@@ -98,6 +96,9 @@ class Charger(models.Model):
         self.state = ChargerState.AVAILABLE
         self.save()
 
+    def set_occupied(self):
+        self.state = ChargerState.OCCUPIED
+        self.save()
 class Booking(models.Model):
     user = models.OneToOneField(User, null=False, on_delete=models.CASCADE)
     station = models.ForeignKey(Station, null=False, on_delete=models.CASCADE)
@@ -240,18 +241,20 @@ class ChargingSession(models.Model):
     def set_connected(self):
         # ref: profilestate: Transistion from RESERVING to CHARGING
         profile = get_profile(self.user)
+        print(profile.state)
         if profile.state == ProfileState.RESERVING:
             profile.state = ProfileState.CHARGING
             profile.save()
             # ref: profilestate: ENTRY to CHARGING
+            print("set connected")
             self.start_charging()
 
     def start_charging(self):
         # ref: profilestate: ENTRY to CHARGING
         # ref: chargingsessionstate: Transistion from NOT_CONNECTED to CHARGING
+        self.set_start_time()
         self.state = ChargingSessionState.CHARGING
         self.save()
-        self.set_start_time()
 
     def update_percent(self, percent):
         # ref: profilestate: INTERNAL TRANSISTION CHARGING
@@ -263,9 +266,9 @@ class ChargingSession(models.Model):
 
     def threshold_breached(self):
         # ref: chargingsessionstate: Transistion from CHARGING to OVERCHARGING
+        self.set_threshold_breached_time()
         self.state = ChargingSessionState.OVERCHARGING
         self.save()
-        self.set_threshold_breached_time()
 
     def set_start_time(self):
         # ref: chargingsessionstate: ENTRY to CHARGING
@@ -281,11 +284,10 @@ class ChargingSession(models.Model):
         # ref: profilestate: Transistion from CHARGING to IDLE
         # ref: profilestate: EXIT CHARGING
         self.charger.free_charger()
-
+        self.set_endtime()
         # ref: chargingsessionsstate: Transistion from CHARGING/OVERCHARGING to COMPLETED/COMPLETED,OVERCHARGING
         self.state = ChargingSessionState.COMPLETED if not self.state == ChargingSessionState.OVERCHARGING else ChargingSessionState.COMPLETED_OVERCHARGED
         self.save()
-        self.set_endtime()
 
         profile = get_profile(self.user)
         profile.state = ProfileState.IDLE
