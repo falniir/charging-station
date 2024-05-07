@@ -260,8 +260,6 @@ class ChargingSession(models.Model):
             self.threshold_breached()
         else:
             self.save()
-        if 99.9 < self.percent:
-            self.stop_charging()
 
     def threshold_breached(self):
         # ref: chargingsessionstate: Transistion from CHARGING to OVERCHARGING
