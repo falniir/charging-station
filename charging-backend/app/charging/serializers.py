@@ -51,4 +51,4 @@ class ChargingSessionSerializer(serializers.ModelSerializer):
 
     class Meta:
         model = ChargingSession
-        fields = ['charger', 'start_time', 'price', 'percent']
+        fields = ['charger', 'start_time', 'price', 'percent', 'state']

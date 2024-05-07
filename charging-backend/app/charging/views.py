@@ -28,13 +28,15 @@ class StationsView(viewsets.ModelViewSet):
     http_method_names = ['get']
 
 
-class StationUserView(APIView):
+class StationUserView(APIView): # Dashboard
 
     def get(self, request, *args, **kwargs):
         user = get_mock_user() if request.user.is_anonymous else request.user
         booking = BookingSerializer(user.booking).data if hasattr(
             user, 'booking') else None
         charging_status = user.charging_sessions.filter(end_time=None).first()
+        if not charging_status:
+            charging_status = user.charging_sessions.order_by('-end_time').first()
         funds = get_profile(user).wallet
         return Response(
             data={'funds': funds,

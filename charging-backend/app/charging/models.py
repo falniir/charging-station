@@ -224,7 +224,7 @@ class ChargingSession(models.Model):
                 self.state == ChargingSessionState.COMPLETED_OVERCHARGED
             ) else (timezone.now() - self.threshold_breach_time)
             threshold_time = threshold_time.total_seconds() / 60
-        price = 200 * sub_threshold_time + 200 * threshold_time
+        price = 1 * sub_threshold_time + 1000 * threshold_time
 
         if get_profile(self.user).wallet <= price:
             self.cancel_charging(price)
