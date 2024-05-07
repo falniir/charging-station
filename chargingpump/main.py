@@ -346,7 +346,7 @@ state_reserved = {'name': 'state_reserved',
 
 state_occupied = {'name': 'state_occupied',
                 'entry': 'mqtt_send_occupied; start_timer("t2", 3000)',
-                'exit': 'stop_timer("t2")'
+                'exit': 'stop_timer("t2"); charging_off'
                 
 }
 
