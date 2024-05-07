@@ -108,10 +108,10 @@ class StopChargingView(APIView):
         user = get_mock_user() if request.user.is_anonymous else request.user
         charging = user.charging_sessions.filter(end_time=None).first()
         profile = get_profile(user)
-        if profile.status == ProfileState.CHARGING:
+        if profile.state == ProfileState.CHARGING:
             charging.stop_charging()
             r, c = mqtt_client.publish(settings.MQTT_TOPIC, 'STOP')
-        elif profile.status == ProfileState.RESERVING:
+        elif profile.state == ProfileState.RESERVING:
             charging.cancel_reservation()
             r, c = mqtt_client.publish(settings.MQTT_TOPIC, 'STOP')
         return Response(
