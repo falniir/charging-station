@@ -1,7 +1,6 @@
 from django.conf import settings
 import paho.mqtt.client as mqtt
-from app.charging.models import get_mock_chargingsession, Charger
-# RESERVE MAINTANENCE START
+from app.charging.models import get_mock_chargingsession, Charger, get_mock_user
 
 def on_connect(mqtt_client, userdata, flags, rc):
     if rc == 0:

@@ -12,6 +12,7 @@ def get_mock_user():
 def get_mock_chargingsession():
     return get_mock_user().charging_sessions.filter(end_time=None).first()
 
+
 class Station(models.Model):
     name = models.CharField(max_length=100, null=False, blank=True)
 
@@ -28,24 +29,27 @@ class Station(models.Model):
         return self.name
 
     def book(self, user):
-        # Avoid booking while charging
-        if get_profile(user).wallet <= 0:
+        # ref: profilestate, TRANSISTION IDLE/BOOKING to BOOKING
+        profile = get_profile(user)
+        if profile.wallet <= 0:
             return 'Insufficent funds'
-        if user.charging_sessions.filter(end_time=None).first():
+        if not profile.state not in [ProfileState.IDLE, ProfileState.BOOKING]:
             return 'Cant book while charging'
-        booking = Booking.objects.filter(user=user).first()
-        queue = Booking.objects.filter(station=self).order_by('position')
-        if not booking:
-            Booking.objects.create(user=user,
-                                   station=self,
-                                   position=len(queue) + 1)
-        elif booking.station != self:
-            booking.remove_from_list()
-            booking.station = self
-            booking.position = len(queue) + 1
-            booking.save()
-        return booking
+        profile.state = ProfileState.BOOKING
+        # ref: profilestate, ENTRY to BOOKING
+        Booking.enter_queue(user, self)
+        return Booking.enter_queue(user, self)
 
+    def reserve_charger(self):
+        # ref: profilestate, entry RESERVING
+        # ref: chargerstate_backend: Transistion from AVAILABLE to OCCUPIED
+        available_charger = Charger.objects.filter(
+            station=self.station, state=ChargerState.AVAILABLE).first()
+        available_charger.set_occupied()
+        available_charger.state = ChargerState.OCCUPIED
+        available_charger.save()
+
+        return available_charger
 
 
 
@@ -71,12 +75,16 @@ class Charger(models.Model):
 
     def set_broken(self):
         # ref: chargerstate_backend: Transistion AVAILABLE/OCCUPIED to BROKEN
+        self.clear_connections()
+        self.state = ChargerState.BROKEN
+        self.save()
+
+    def stop_session(self):
+        # ref: chargerstate_backend: BROKEN entry method
         running = ChargingSession.objects.filter(end_time=None,
                                                  charger=self).first()
         if running:
             running.stop_charging()
-        self.state = ChargerState.BROKEN
-        self.save()
 
     def set_fixed(self):
         # ref: chargerstate_backend: Transistion BROKEN to AVAILABLE
@@ -84,6 +92,11 @@ class Charger(models.Model):
             self.state = ChargerState.AVAILABLE
             self.save()
 
+    def free_charger(self):
+        # ref: profilestate: EXIT CHARGING
+        # ref: chargerstate_backend: Transistion OCCUPIED to AVAILABLE
+        self.state = ChargerState.AVAILABLE
+        self.save()
 
 class Booking(models.Model):
     user = models.OneToOneField(User, null=False, on_delete=models.CASCADE)
@@ -94,11 +107,35 @@ class Booking(models.Model):
                                          blank=False,
                                          default=timezone.now)
 
-    def delete(self):
-        self.remove_from_list()
-        super(Booking, self).delete()
+    def cancel_booking(self):
+        # ref: profilestate, TRANSISTION of BOOKING to IDLE
+        profile = get_profile(self.user)
+        if profile.state == ProfileState.BOOKING:
+            profile = get_profile(self.user)
+            profile.state = ProfileState.IDLE
+            profile.save()
+            self.remove_from_queue()
+        self.delete()
 
-    def remove_from_list(self):
+    @staticmethod
+    def enter_queue(user: User, station: Station):
+        # ref: profilestate, ENTRY to BOOKING
+        booking = Booking.objects.filter(user=user).first()
+        queue = Booking.objects.filter(station=station).order_by('position')
+        if not booking:
+            booking = Booking.objects.create(user=user,
+                                             station=station,
+                                             position=len(queue) + 1)
+        elif booking.station != station:
+            booking.remove_from_queue()
+            booking.station = station
+            booking.position = len(queue) + 1
+            booking.save()
+        return booking
+
+    def remove_from_queue(self):
+        # ref: profilestate, exit FROM BOOKING to IDLE
+        # ref: profilestate, entry RESERVING
         bookings = Booking.objects.filter(
             station=self.station,
             position__gt=self.position).order_by('position')
@@ -106,24 +143,31 @@ class Booking(models.Model):
             book.position -= 1
             book.save()
 
-    def start_charging(self):
+    def reserve_charging(self):
+        # ref: profilestate, TRANSISTION from BOOKING to RESERVING
+        profile = get_profile(self.user)
         # Conditions to return messages if not correct conditions are set.
-        if self.user.charging_sessions.filter(end_time=None).first():
-            return 'Already charging'
+        if self.user.charging_sessions.filter(
+                end_time=None).first() or profile.state in [
+                    ProfileState.RESERVING, ProfileState.CHARGING
+                ]:
+            return 'Already reserved'
         if self.station.available_chargers() <= self.position:
             return 'Not your turn'
-        if self.user.charging_sessions.filter(end_time=None).first():
-            return 'You cant charge while already charging'
 
-        # Get available Charger
-        available_charger = Charger.objects.filter(
-            station=self.station, state=ChargerState.AVAILABLE).first()
         # ref: chargerstate_backend: Transistion from AVAILABLE to OCCUPIED
-        available_charger.state = ChargerState.OCCUPIED
-        available_charger.save()
+        # ref: profilestate, entry RESERVING
+        # Get available Charger
+        available_charger = self.station.reserve_charger()
 
+        # ref: profilestate: Transistion from AVAILABLE to OCCUPIED
         charging_session = ChargingSession.objects.create(
             user=self.user, charger=available_charger)
+        profile.state = ProfileState.RESERVING
+        profile.save()
+
+        # ref: profilestate, ENTRY to RESERVED
+        self.remove_from_queue()
         self.delete()
         return charging_session
 
@@ -186,44 +230,90 @@ class ChargingSession(models.Model):
         return price
 
     def cancel_charging(self, price):
-        # Only stop charging if charging
         if self.state not in [
                 ChargingSessionState.OVERCHARGING,
                 ChargingSessionState.CHARGING
         ]:
             return
-        # Update wallet
         self.stop_charging()
 
     def set_connected(self):
-        self.start_time = timezone.now()
+        # ref: profilestate: Transistion from RESERVING to CHARGING
+        profile = get_profile(self.user)
+        if profile.state == ProfileState.RESERVING:
+            profile.state = ProfileState.CHARGING
+            profile.save()
+            # ref: profilestate: ENTRY to CHARGING
+            self.start_charging()
+
+    def start_charging(self):
+        # ref: profilestate: ENTRY to CHARGING
+        # ref: chargingsessionstate: Transistion from NOT_CONNECTED to CHARGING
         self.state = ChargingSessionState.CHARGING
         self.save()
+        self.set_start_time()
 
     def update_percent(self, percent):
+        # ref: profilestate: INTERNAL TRANSISTION CHARGING
         self.percent = percent
         if self.percent >= 80 and self.state == ChargingSessionState.CHARGING:
             self.threshold_breached()
         else:
             self.save()
+        if 99.9 < self.percent:
+            self.stop_charging()
 
     def threshold_breached(self):
-        self.threshold_breach_time = timezone.now()
+        # ref: chargingsessionstate: Transistion from CHARGING to OVERCHARGING
         self.state = ChargingSessionState.OVERCHARGING
+        self.save()
+        self.set_threshold_breached_time()
+
+    def set_start_time(self):
+        # ref: chargingsessionstate: ENTRY to CHARGING
+        self.start_time = timezone.now()
+        self.save()
+
+    def set_threshold_breached_time(self):
+        # ref: chargingsessionstate: ENTRY to OVERCHARGING
+        self.threshold_breach_time = timezone.now()
         self.save()
 
     def stop_charging(self):
-        # ref: chargerstate_backend: Transistion OCCUPIED to AVAILABLE
-        self.charger.state = ChargerState.AVAILABLE
-        self.charger.save()
+        # ref: profilestate: Transistion from CHARGING to IDLE
+        # ref: profilestate: EXIT CHARGING
+        self.charger.free_charger()
 
-        # Pay
+        # ref: chargingsessionsstate: Transistion from CHARGING/OVERCHARGING to COMPLETED/COMPLETED,OVERCHARGING
+        self.state = ChargingSessionState.COMPLETED if not self.state == ChargingSessionState.OVERCHARGING else ChargingSessionState.COMPLETED_OVERCHARGED
+        self.save()
+        self.set_endtime()
+
+        profile = get_profile(self.user)
+        profile.state = ProfileState.IDLE
+        profile.save()
+        # ref: profilestate: EXIT CHARGING
+        self.pay_for_charging()
+
+    def set_endtime(self):
+        self.end_time = timezone.now()
+        self.save()
+
+    def cancel_reservation(self):
+        # ref: profilestate: Transistion from RESERVED to IDLE
+        # ref: profilestate: EXIT RESERVED to IDLE
+        self.charger.free_charger()
+
+        profile = get_profile(self.user)
+        profile.state = ProfileState.IDLE
+        profile.save()
+        self.delete()
+
+    def pay_for_charging(self):
+        # ref: profilestate: EXIT CHARGING
         profile = get_profile(self.user)
         profile.wallet -= self.price
         profile.save()
-
-        self.end_time = timezone.now()
-        self.save()
 
     def save(self, *args: tuple, **kwargs: dict):
         # Error correction is state is null
@@ -236,8 +326,12 @@ class ChargingSession(models.Model):
         self.price = self.current_price()
         super().save(*args, **kwargs)
 
+
 class ProfileState(models.IntegerChoices):
-    IDLE = 0, _('Not connected')
+    IDLE = 0, _('Idle')
+    BOOKING = 1, _('Booking')
+    RESERVING = 2, _('Reserving')
+    CHARGING = 3, _('Charging')
 
 
 class Profile(models.Model):
