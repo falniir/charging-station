@@ -65,6 +65,8 @@ export default function ChargingStation() {
         console.error(error);
       }
     };
+    
+
 
     fetchData();
 
@@ -89,6 +91,23 @@ export default function ChargingStation() {
   // console.log("bookedStation:", bookedStation);
   // console.log("booking:", booking);
   // console.log("dashboard:", dashboard);
+// 0 is not charging, 1 is charging, 2 overcharging, 3 completed, 4 completed overcharged
+  function showChargingState() {
+
+    if (dashboard?.charging_status.state === 0) {
+      return "Not Charging";
+    } else if (dashboard?.charging_status.state === 1) {
+      return "Charging";
+    } else if (dashboard?.charging_status.state === 2) {
+      return "Overcharging";
+    } else if (dashboard?.charging_status.state === 3) {
+      return "Completed";
+    } else if (dashboard?.charging_status.state === 4) {
+      return "Completed Overcharged";
+    } else {
+      return "Unknown";
+    }
+  }
 
   async function postLeaveBookingAndRedirect() {
     postLeavebooking();
@@ -259,8 +278,8 @@ export default function ChargingStation() {
                           <span className="font-semibold">{dashboard?.charging_status.start_time as unknown as String}</span>
                         </div>
                         <div className="flex items-center justify-between">
-                          <span>Charging Level</span>
-                          <span className="font-semibold">{dashboard?.charging_status.state}</span>
+                          <span>Charging Status</span>
+                          <span className="font-semibold">{showChargingState()}</span>
                         </div>
                         <Progress value={dashboard?.charging_status?.percent as number} />
                       </div>
